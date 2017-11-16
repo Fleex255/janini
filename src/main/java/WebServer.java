@@ -2,6 +2,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
 import java.security.Permissions;
+import java.time.OffsetDateTime;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -11,17 +12,15 @@ import java.util.concurrent.TimeUnit;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ScriptEvaluator;
 
-import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.StaticHandler;
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
+
+import static spark.Spark.post;
+import static spark.Spark.port;
+import static spark.Spark.staticFiles;
 
 /**
- * A class that runs a small web server that runs arbitrary Java code.
+ * A small web server that runs arbitrary Java code.
  */
 public class WebServer {
 
@@ -34,7 +33,7 @@ public class WebServer {
     /**
      * The port that our server listens on.
      */
-    private static final int DEFAULT_SERVER_PORT = 8125;
+    private static final int DEFAULT_SERVER_PORT = 3223;
 
     /** Runnable subclass for execution. */
     static class RunCode implements Callable<JsonObject> {
@@ -56,14 +55,21 @@ public class WebServer {
             ScriptEvaluator scriptEvaluator = new ScriptEvaluator();
             scriptEvaluator.setPermissions(new Permissions());
             try {
-                scriptEvaluator.cook(uploadContent.getString("source"));
-                uploadContent.put("compiled", true);
+                uploadContent.add("compileStart", OffsetDateTime.now().toString());
+                scriptEvaluator.cook(uploadContent.get("source").asString());
+                uploadContent.add("compileFinish", OffsetDateTime.now().toString());
+                uploadContent.add("compiled", true);
+
+                uploadContent.add("runStart", OffsetDateTime.now().toString());
                 scriptEvaluator.evaluate(null);
-                uploadContent.put("ran", true);
+                uploadContent.add("runFinish", OffsetDateTime.now().toString());
+                uploadContent.add("ran", true);
             } catch (CompileException e) {
-                uploadContent.put("compiled", false);
+                uploadContent.add("compiled", false);
             } catch (InvocationTargetException e) {
-                uploadContent.put("ran", false);
+                uploadContent.add("ran", false);
+            } finally {
+                uploadContent.add("executionFinish", OffsetDateTime.now().toString());
             }
             return uploadContent;
         }
@@ -75,17 +81,11 @@ public class WebServer {
      * @param uploadContent a JSON object describing what to do
      * @return the same JSON object with some additional information about what happened
      */
-    public static JsonObject run(final JsonObject uploadContent) {
-
-        /*
-         * Pull fields off of the request. We have a width, a height, and a flat array of image
-         * bytes. The image bytes are encoded using Base64, but getBinary will take care of that for
-         * us.
-         */
+    public static synchronized JsonObject run(final JsonObject uploadContent) {
 
         RunCode runCode = new RunCode(uploadContent);
+        uploadContent.add("submitted", OffsetDateTime.now().toString());
         Future<JsonObject> future = executor.submit(runCode);
-        executor.shutdown();
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
@@ -98,18 +98,19 @@ public class WebServer {
         JsonObject returnContent = null;
         try {
             returnContent = future.get(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
-            uploadContent.put("timeout", false);
+            uploadContent.add("timeout", false);
         } catch (Exception exception) {
             future.cancel(true);
-            uploadContent.put("ran", true);
-            uploadContent.put("timeout", true);
+            uploadContent.add("ran", true);
+            uploadContent.add("timeout", true);
         } finally {
+            uploadContent.add("completed", OffsetDateTime.now().toString());
             System.out.flush();
             System.err.flush();
             System.setOut(old);
             System.setErr(err);
-            uploadContent.put("out", byteArrayOutputStream.toString());
-            uploadContent.put("err", byteArrayErrorStream.toString());
+            uploadContent.add("out", byteArrayOutputStream.toString());
+            uploadContent.add("err", byteArrayErrorStream.toString());
         }
         return returnContent;
     }
@@ -120,54 +121,16 @@ public class WebServer {
      * @param unused unused input arguments
      */
     public static void main(final String[] unused) {
-
-        Vertx vertx = Vertx.vertx();
-
-        /*
-         * Set up routes to our static assets: index.html, index.js, and index.css. We use a single
-         * route here for all GET requests. In a more complex web server this would probably not be
-         * appropriate, but in this simple case it works fine.
-         */
-        Router router = Router.router(vertx);
-        router.route().method(HttpMethod.GET).handler(StaticHandler.create());
-
-        /*
-         * The BodyHandler ensures that we can retrieve JSON data from our request body. We send all
-         * POST requests to the handler defined above. Again, in a more complex server you would
-         * want to do something more sophisticated.
-         */
-        router.route().method(HttpMethod.POST).handler(BodyHandler.create());
-        router.route(HttpMethod.POST, "/:run").handler(routingContext -> {
-            JsonObject uploadContent = run(routingContext.getBodyAsJson());
-            routingContext.response()
-                    .putHeader("content-type", "application/json; charset=utf-8")
-                    .end(uploadContent.encode());
+        port(DEFAULT_SERVER_PORT);
+        staticFiles.location("/webroot");
+        post("/run", (request, response) -> {
+            JsonObject requestContent = Json.parse(request.body()).asObject();
+            requestContent.add("received", OffsetDateTime.now().toString());
+            JsonObject responseContent = run(requestContent);
+            requestContent.add("returned", OffsetDateTime.now().toString());
+            response.body(responseContent.toString());
+            response.type("application/json; charset=utf-8");
+            return response;
         });
-
-        /*
-         * Turn on compression, although upstream compression isn't currently implemented.
-         */
-        HttpServerOptions serverOptions = new HttpServerOptions();
-        serverOptions.setCompressionSupported(true);
-        serverOptions.setDecompressionSupported(true);
-
-        HttpServer server = vertx.createHttpServer();
-
-        /*
-         * Ensure that the server is closed when we exit, to avoid port collisions.
-         */
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                vertx.close();
-            }
-        });
-
-        /*
-         * Start the server.
-         */
-        System.out.println("Starting web server on localhost:" + DEFAULT_SERVER_PORT);
-        System.out.println("If you get a message about a port in use, please shut\n"
-                + "down other running instances of this web server.");
-        server.requestHandler(router::accept).listen(DEFAULT_SERVER_PORT);
     }
 }

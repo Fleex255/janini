@@ -21,10 +21,14 @@ buildscript {
 }
 
 dependencies {
-    compile 'io.vertx:vertx-web:3.4.2'
+    compile 'com.sparkjava:spark-core:2.7.1'
     compile 'org.codehaus.janino:janino:3.0.7'
-    shadow 'io.vertx:vertx-web:3.4.2'
+    compile 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
+    compile 'org.slf4j:slf4j-simple:1.7.25'
+    shadow 'com.sparkjava:spark-core:2.7.1'
     shadow 'org.codehaus.janino:janino:3.0.7'
+    shadow 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
+    shadow 'org.slf4j:slf4j-simple:1.7.25'
     testCompile 'org.testng:testng:6.9.6'
 }
 
