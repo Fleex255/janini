@@ -1,0 +1,10 @@
+.gradle
+!gradle-wrapper.jar
+/bin/
+/build/
+/test-output/
+*.swp
+*.swo
+/.vertx
+/node_modules/
+/file-uploads/

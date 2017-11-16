@@ -1,0 +1,9 @@
+.gradle
+bin
+build
+test-output
+.settings/org.eclipse.buildship.core.prefs
+*.swp
+*.swo
+.vertx
+file-uploads

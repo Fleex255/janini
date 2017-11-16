@@ -1,0 +1,50 @@
+/*
+ * For more details take a look at the Java Quickstart chapter in the Gradle
+ * user guide available at https://docs.gradle.org/4.0.2/userguide/tutorial_java_projects.html
+ */
+
+apply plugin: 'java'
+apply plugin: 'checkstyle'
+
+repositories {
+    jcenter()
+}
+configurations {
+    shadow
+}
+
+buildscript {
+    repositories {
+        jcenter()
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+dependencies {
+    compile 'io.vertx:vertx-web:3.4.2'
+    compile 'org.codehaus.janino:janino:3.0.7'
+    shadow 'io.vertx:vertx-web:3.4.2'
+    shadow 'org.codehaus.janino:janino:3.0.7'
+    testCompile 'org.testng:testng:6.9.6'
+}
+
+checkstyle {
+    toolVersion "8.0"
+}
+
+test {
+    useTestNG()
+}
+
+jar {
+    from {
+        configurations.shadow.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    manifest {
+        attributes 'Main-Class': 'WebServer'
+    }
+}
+
+// vim: ts=4:sw=4:et:ft=groovy
