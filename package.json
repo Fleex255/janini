@@ -1,0 +1,22 @@
+{
+  "name": "janini",
+  "version": "0.0.1",
+  "description": "Simple Java runtime server",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cs125-illinois/janini.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cs125-illinois/janini/issues"
+  },
+  "homepage": "https://github.com/cs125-illinois/janini#readme",
+  "dependencies": {
+    "http-server": "^0.10.0"
+  }
+}

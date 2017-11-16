@@ -1,12 +1,13 @@
+import static spark.Spark.port;
+import static spark.Spark.post;
+import static spark.Spark.staticFiles;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
-import java.security.Permissions;
 import java.time.OffsetDateTime;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
 import org.codehaus.commons.compiler.CompileException;
@@ -15,20 +16,13 @@ import org.codehaus.janino.ScriptEvaluator;
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 
-import static spark.Spark.post;
-import static spark.Spark.port;
-import static spark.Spark.staticFiles;
-
 /**
  * A small web server that runs arbitrary Java code.
  */
 public class WebServer {
 
-    /** Small thread pool. */
-    private static ExecutorService executor = Executors.newSingleThreadExecutor();
-
     /** Default timeout for code execution. */
-    private static final int DEFAULT_TIMEOUT = 1000;
+    private static final int DEFAULT_TIMEOUT = 100;
 
     /**
      * The port that our server listens on.
@@ -38,38 +32,27 @@ public class WebServer {
     /** Runnable subclass for execution. */
     static class RunCode implements Callable<JsonObject> {
 
-        /** Content to process. */
-        private JsonObject uploadContent;
+        /** Our script evaluator. */
+        private ScriptEvaluator scriptEvaluator;
 
         /**
          * Instantiates a new run code.
          *
-         * @param setUploadContent the set upload content
+         * @param setScriptEvaluator the script evaluator to use
          */
-        RunCode(final JsonObject setUploadContent) {
-            uploadContent = setUploadContent;
+        RunCode(final ScriptEvaluator setScriptEvaluator) {
+            scriptEvaluator = setScriptEvaluator;
         }
 
         @Override
         public JsonObject call() {
-            ScriptEvaluator scriptEvaluator = new ScriptEvaluator();
-            scriptEvaluator.setPermissions(new Permissions());
+            JsonObject uploadContent = new JsonObject();
             try {
-                uploadContent.add("compileStart", OffsetDateTime.now().toString());
-                scriptEvaluator.cook(uploadContent.get("source").asString());
-                uploadContent.add("compileFinish", OffsetDateTime.now().toString());
-                uploadContent.add("compiled", true);
-
-                uploadContent.add("runStart", OffsetDateTime.now().toString());
-                scriptEvaluator.evaluate(null);
-                uploadContent.add("runFinish", OffsetDateTime.now().toString());
-                uploadContent.add("ran", true);
-            } catch (CompileException e) {
-                uploadContent.add("compiled", false);
+                scriptEvaluator.evaluate(new Object[0]);
+                uploadContent.add("completed", true);
             } catch (InvocationTargetException e) {
-                uploadContent.add("ran", false);
-            } finally {
-                uploadContent.add("executionFinish", OffsetDateTime.now().toString());
+                uploadContent.add("completed", false);
+                uploadContent.add("runtimeError", e.getMessage());
             }
             return uploadContent;
         }
@@ -79,40 +62,58 @@ public class WebServer {
      * Run some Java code.
      *
      * @param uploadContent a JSON object describing what to do
-     * @return the same JSON object with some additional information about what happened
      */
-    public static synchronized JsonObject run(final JsonObject uploadContent) {
-
-        RunCode runCode = new RunCode(uploadContent);
+    @SuppressWarnings("deprecation")
+    public static synchronized void run(final JsonObject uploadContent) {
         uploadContent.add("submitted", OffsetDateTime.now().toString());
-        Future<JsonObject> future = executor.submit(runCode);
 
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ByteArrayOutputStream byteArrayErrorStream = new ByteArrayOutputStream();
-        PrintStream outStream = new PrintStream(byteArrayOutputStream);
-        PrintStream errStream = new PrintStream(byteArrayErrorStream);
+        ScriptEvaluator scriptEvaluator = new ScriptEvaluator();
+        scriptEvaluator.setNoPermissions();
+
+        try {
+            uploadContent.add("compileStart", OffsetDateTime.now().toString());
+            scriptEvaluator.cook(uploadContent.get("source").asString());
+            uploadContent.add("compiled", true);
+        } catch (CompileException e) {
+            uploadContent.add("compiled", false);
+            uploadContent.add("compileError", e.getMessage());
+            return;
+        } finally {
+            uploadContent.add("compileFinish", OffsetDateTime.now().toString());
+        }
+
+        RunCode runCode = new RunCode(scriptEvaluator);
+        FutureTask<JsonObject> futureTask = new FutureTask<>(runCode);
+        Thread executionThread = new Thread(futureTask);
+
+        ByteArrayOutputStream combinedOutputStream = new ByteArrayOutputStream();
+        PrintStream combinedStream = new PrintStream(combinedOutputStream);
         PrintStream old = System.out;
         PrintStream err = System.err;
-        System.setOut(outStream);
-        System.setErr(errStream);
-        JsonObject returnContent = null;
+        System.setOut(combinedStream);
+        System.setErr(combinedStream);
         try {
-            returnContent = future.get(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
+            executionThread.start();
+            uploadContent.add("runStart", OffsetDateTime.now().toString());
+            JsonObject executionContent = futureTask.get(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
             uploadContent.add("timeout", false);
+            uploadContent.merge(executionContent);
         } catch (Exception exception) {
-            future.cancel(true);
-            uploadContent.add("ran", true);
-            uploadContent.add("timeout", true);
+            futureTask.cancel(true);
+            executionThread.stop();
+            uploadContent.set("completed", false);
+            uploadContent.set("timeout", true);
         } finally {
-            uploadContent.add("completed", OffsetDateTime.now().toString());
+            uploadContent.add("runFinish", OffsetDateTime.now().toString());
             System.out.flush();
             System.err.flush();
             System.setOut(old);
             System.setErr(err);
-            uploadContent.add("out", byteArrayOutputStream.toString());
-            uploadContent.add("err", byteArrayErrorStream.toString());
+            if (uploadContent.get("completed").asBoolean()) {
+                uploadContent.add("output", combinedOutputStream.toString());
+            }
         }
-        return returnContent;
+        return;
     }
 
     /**
@@ -126,11 +127,10 @@ public class WebServer {
         post("/run", (request, response) -> {
             JsonObject requestContent = Json.parse(request.body()).asObject();
             requestContent.add("received", OffsetDateTime.now().toString());
-            JsonObject responseContent = run(requestContent);
+            run(requestContent);
             requestContent.add("returned", OffsetDateTime.now().toString());
-            response.body(responseContent.toString());
             response.type("application/json; charset=utf-8");
-            return response;
+            return requestContent.toString();
         });
     }
 }
