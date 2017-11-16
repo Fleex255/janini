@@ -79,7 +79,7 @@ public class WebServer {
             uploadContent.add("compileStart", OffsetDateTime.now().toString());
             scriptEvaluator.cook(uploadContent.get("source").asString());
             uploadContent.add("compiled", true);
-        } catch (CompileException e) {
+        } catch (RuntimeException | CompileException e) {
             uploadContent.add("compiled", false);
             uploadContent.add("compileError", e.getMessage());
             return;
