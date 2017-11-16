@@ -10,6 +10,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ScriptEvaluator;
 
@@ -27,7 +32,7 @@ public class WebServer {
     /**
      * The port that our server listens on.
      */
-    private static final int DEFAULT_SERVER_PORT = 3223;
+    private static final int DEFAULT_SERVER_PORT = 8888;
 
     /** Runnable subclass for execution. */
     static class RunCode implements Callable<JsonObject> {
@@ -119,10 +124,20 @@ public class WebServer {
     /**
      * Start the code execution web server.
      *
-     * @param unused unused input arguments
+     * @param args command line arguments
+     * @throws ParseException thrown if command line options cannot be parsed
      */
-    public static void main(final String[] unused) {
-        port(DEFAULT_SERVER_PORT);
+    public static void main(final String[] args) throws ParseException {
+        Options options = new Options();
+        options.addOption("p", "port", true, "Port to use. Default is 8888.");
+        CommandLineParser parser = new BasicParser();
+        CommandLine settings = parser.parse(options, args);
+
+        if (settings.hasOption("p")) {
+            port(Integer.parseInt(settings.getOptionValue("p")));
+        } else {
+            port(DEFAULT_SERVER_PORT);
+        }
         staticFiles.location("/webroot");
         post("/run", (request, response) -> {
             JsonObject requestContent = Json.parse(request.body()).asObject();

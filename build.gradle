@@ -25,10 +25,12 @@ dependencies {
     compile 'org.codehaus.janino:janino:3.0.7'
     compile 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
     compile 'org.slf4j:slf4j-simple:1.7.25'
+    compile 'commons-cli:commons-cli:20040117.000000'
     shadow 'com.sparkjava:spark-core:2.7.1'
     shadow 'org.codehaus.janino:janino:3.0.7'
     shadow 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
     shadow 'org.slf4j:slf4j-simple:1.7.25'
+    shadow 'commons-cli:commons-cli:20040117.000000'
     testCompile 'org.testng:testng:6.9.6'
 }
 
@@ -45,6 +47,8 @@ jar {
         configurations.shadow.collect {
             it.isDirectory() ? it : zipTree(it)
         }
+    } {
+        exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
     }
     manifest {
         attributes 'Main-Class': 'WebServer'
