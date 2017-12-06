@@ -11,4 +11,8 @@ Currently deployed at https://cs125.cs.illinois.edu/janini/.
   tool](https://github.com/trung/InMemoryJavaCompiler). Benchmark to compare
   with Janino and potentially remove Janino entirely if performance is similar.
 * Containerize for broader deployment.
+* Complete a more comprehensive test suite, including attacks and errors to
+  check robustness.
+* If insufficiently robust, figure out a way to easily restart the server if and
+  when it crashes.
 * Performance testing using [artillery.io](https://artillery.io/).
