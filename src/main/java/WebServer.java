@@ -138,8 +138,8 @@ public class WebServer {
         } else {
             port(DEFAULT_SERVER_PORT);
         }
-        staticFiles.location("/webroot");
-        post("/run", (request, response) -> {
+        // staticFiles.location("/webroot");
+        post("/", (request, response) -> {
             JsonObject requestContent = Json.parse(request.body()).asObject();
             requestContent.add("received", OffsetDateTime.now().toString());
             run(requestContent);
