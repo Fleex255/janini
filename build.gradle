@@ -22,12 +22,12 @@ buildscript {
 
 dependencies {
     compile 'com.sparkjava:spark-core:2.7.1'
-    compile 'org.codehaus.janino:janino:3.0.7'
+    compile 'org.codehaus.janino:janino:3.0.8'
     compile 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
     compile 'org.slf4j:slf4j-simple:1.7.25'
     compile 'commons-cli:commons-cli:20040117.000000'
     shadow 'com.sparkjava:spark-core:2.7.1'
-    shadow 'org.codehaus.janino:janino:3.0.7'
+    shadow 'org.codehaus.janino:janino:3.0.8'
     shadow 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
     shadow 'org.slf4j:slf4j-simple:1.7.25'
     shadow 'commons-cli:commons-cli:20040117.000000'

@@ -8,19 +8,20 @@ $(function () {
   })
 
   $(window).keypress(function (event) {
-    if (!(event.which === 115 && event.ctrlKey) && !(event.which === 19)) {
+    if (!(event.which === 13 && event.ctrlKey) &&
+      !(event.which === 10 && event.ctrlKey)) {
       return true
     }
     event.preventDefault()
 
     let toRun = source.getValue()
     if (toRun.trim() === "") {
-      $("#output pre").text(`> Hit Control-S to run your Java code...`)
+      $("#output pre").text(`> Hit Control-Enter to run your Java code...`)
       return
     }
 
-    $.post("run", JSON.stringify({
-      source: source.getValue()
+    $.post("/run", JSON.stringify({
+      source: source.getValue() + "\n"
     })).done(result => {
       console.log(JSON.stringify(result, null, 2))
       if (result.completed) {

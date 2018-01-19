@@ -79,7 +79,7 @@ public class WebServer {
             uploadContent.add("compileStart", OffsetDateTime.now().toString());
             scriptEvaluator.cook(uploadContent.get("source").asString());
             uploadContent.add("compiled", true);
-        } catch (RuntimeException | CompileException e) {
+        } catch (Throwable e) {
             uploadContent.add("compiled", false);
             uploadContent.add("compileError", e.getMessage());
             return;
@@ -138,14 +138,20 @@ public class WebServer {
         } else {
             port(DEFAULT_SERVER_PORT);
         }
-        // staticFiles.location("/webroot");
-        post("/", (request, response) -> {
-            JsonObject requestContent = Json.parse(request.body()).asObject();
-            requestContent.add("received", OffsetDateTime.now().toString());
-            run(requestContent);
-            requestContent.add("returned", OffsetDateTime.now().toString());
-            response.type("application/json; charset=utf-8");
-            return requestContent.toString();
+        staticFiles.location("/webroot");
+        post("/run", (request, response) -> {
+            JsonObject requestContent;
+            try {
+              requestContent = Json.parse(request.body()).asObject();
+              requestContent.add("received", OffsetDateTime.now().toString());
+              run(requestContent);
+              requestContent.add("returned", OffsetDateTime.now().toString());
+              response.type("application/json; charset=utf-8");
+              return requestContent.toString();
+            } catch (Exception e) {
+              System.err.println(e);
+              return "";
+            }
         });
     }
 }
