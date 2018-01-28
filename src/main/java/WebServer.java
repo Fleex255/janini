@@ -15,7 +15,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ScriptEvaluator;
 
 import com.eclipsesource.json.Json;
@@ -118,7 +117,6 @@ public class WebServer {
                 uploadContent.add("output", combinedOutputStream.toString());
             }
         }
-        return;
     }
 
     /**
@@ -149,7 +147,7 @@ public class WebServer {
               response.type("application/json; charset=utf-8");
               return requestContent.toString();
             } catch (Exception e) {
-              System.err.println(e);
+              System.err.println(e.toString());
               return "";
             }
         });

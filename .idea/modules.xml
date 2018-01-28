@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/janini.iml" filepath="$PROJECT_DIR$/janini.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/janini.iml" filepath="$PROJECT_DIR$/.idea/modules/janini.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/janini_main.iml" filepath="$PROJECT_DIR$/.idea/modules/janini_main.iml" group="janini" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/janini_test.iml" filepath="$PROJECT_DIR$/.idea/modules/janini_test.iml" group="janini" />
     </modules>
