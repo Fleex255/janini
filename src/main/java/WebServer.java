@@ -1,6 +1,7 @@
-import static spark.Spark.port;
-import static spark.Spark.post;
-import static spark.Spark.staticFiles;
+import com.eclipsesource.json.Json;
+import com.eclipsesource.json.JsonObject;
+import org.apache.commons.cli.*;
+import org.codehaus.janino.ScriptEvaluator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -10,22 +11,16 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.cli.BasicParser;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.codehaus.janino.ScriptEvaluator;
-
-import com.eclipsesource.json.Json;
-import com.eclipsesource.json.JsonObject;
+import static spark.Spark.*;
 
 /**
  * A small web server that runs arbitrary Java code.
  */
 public class WebServer {
 
-    /** Default timeout for code execution. */
+    /**
+     * Default timeout for code execution.
+     */
     private static final int DEFAULT_TIMEOUT = 100;
 
     /**
@@ -33,10 +28,14 @@ public class WebServer {
      */
     private static final int DEFAULT_SERVER_PORT = 8888;
 
-    /** Runnable subclass for execution. */
+    /**
+     * Runnable subclass for execution.
+     */
     static class RunCode implements Callable<JsonObject> {
 
-        /** Our script evaluator. */
+        /**
+         * Our script evaluator.
+         */
         private ScriptEvaluator scriptEvaluator;
 
         /**
@@ -129,6 +128,7 @@ public class WebServer {
         Options options = new Options();
         options.addOption("p", "port", true, "Port to use. Default is 8888.");
         options.addOption("i", "interactive", false, "Enable interactive mode.");
+        options.addOption("v", "verbose", false, "Enable verbose mode.");
         CommandLineParser parser = new BasicParser();
         CommandLine settings = parser.parse(options, args);
 
@@ -145,15 +145,17 @@ public class WebServer {
         post(location, (request, response) -> {
             JsonObject requestContent;
             try {
-              requestContent = Json.parse(request.body()).asObject();
-              requestContent.add("received", OffsetDateTime.now().toString());
-              run(requestContent);
-              requestContent.add("returned", OffsetDateTime.now().toString());
-              response.type("application/json; charset=utf-8");
-              return requestContent.toString();
+                requestContent = Json.parse(request.body()).asObject();
+                requestContent.add("received", OffsetDateTime.now().toString());
+                run(requestContent);
+                requestContent.add("returned", OffsetDateTime.now().toString());
+                response.type("application/json; charset=utf-8");
+                return requestContent.toString();
             } catch (Exception e) {
-              System.err.println(e.toString());
-              return "";
+                if (settings.hasOption("v")) {
+                    System.err.println(e.toString());
+                }
+                return "";
             }
         });
     }
