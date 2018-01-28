@@ -33,7 +33,7 @@
 <!--
   Configuration customized for CS125.
   * Semi-permanent customizations marked with CS125.
-  * Per-project customizations (if any) marked with janini.
+  * Per-project customizations (if any) marked with Janini.
  -->
 
 <module name="Checker">
@@ -44,11 +44,6 @@
 
         <property name="basedir" value="${basedir}"/>
     -->
-
-  <!-- CS125: Add warning suppression via @SuppressWarnings Java annotation
-       and comments. -->
-  <module name="SuppressWarningsFilter" />
-  <module name="SuppressionCommentFilter"/>
 
   <property name="fileExtensions" value="java, properties, xml"/>
 
@@ -87,9 +82,6 @@
   </module>
 
   <module name="TreeWalker">
-    <!-- CS125: Add warning suppression via @SuppressWarnings Java annotation. -->
-    <module name="SuppressWarningsHolder" />
-    <module name="FileContentsHolder"/>
 
     <!-- Checks for Javadoc comments.                     -->
     <!-- See http://checkstyle.sf.net/config_javadoc.html -->
@@ -112,7 +104,8 @@
 
     <!-- Checks for imports                              -->
     <!-- See http://checkstyle.sf.net/config_import.html -->
-    <module name="AvoidStarImport"/>
+    <!-- janini: Spark needs this. -->
+    <!-- <module name="AvoidStarImport"/> -->
     <module name="IllegalImport"/> <!-- defaults to sun.* packages -->
     <module name="RedundantImport"/>
     <module name="UnusedImports">
@@ -121,9 +114,9 @@
 
     <!-- Checks for Size Violations.                    -->
     <!-- See http://checkstyle.sf.net/config_sizes.html -->
-    <!-- CS125: 80 characters is too few on modern monitors. Google uses 100, so so do we. -->
+    <!-- CS125: 80 characters is too few on modern monitors. IntelliJ  uses 120, so so do we. -->
     <module name="LineLength">
-      <property name="max" value="100"/>
+      <property name="max" value="120"/>
     </module>
     <module name="MethodLength"/>
     <module name="ParameterNumber"/>
