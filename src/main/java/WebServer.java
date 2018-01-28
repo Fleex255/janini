@@ -118,6 +118,11 @@ public class WebServer {
         }
     }
 
+    static {
+        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
+        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
+    }
+
     /**
      * Start the code execution web server.
      *
@@ -125,6 +130,7 @@ public class WebServer {
      * @throws ParseException thrown if command line options cannot be parsed
      */
     public static void main(final String[] args) throws ParseException {
+
         Options options = new Options();
         options.addOption("p", "port", true, "Port to use. Default is 8888.");
         options.addOption("i", "interactive", false, "Enable interactive mode.");
