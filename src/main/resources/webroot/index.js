@@ -7,13 +7,7 @@ $(function () {
     matchBrackets: true
   })
 
-  $(window).keypress(function (event) {
-    if (!(event.which === 13 && event.ctrlKey) &&
-      !(event.which === 10 && event.ctrlKey)) {
-      return true
-    }
-    event.preventDefault()
-
+  let run = () => {
     let toRun = source.getValue()
     if (toRun.trim() === "") {
       $("#output pre").text(`> Hit Control-Enter to run your Java code...`)
@@ -23,7 +17,6 @@ $(function () {
     $.post("/run", JSON.stringify({
       source: source.getValue() + "\n"
     })).done(result => {
-      console.log(JSON.stringify(result, null, 2))
       if (result.completed) {
         $("#output pre").text(result.output)
       } else if (result.timeout) {
@@ -39,5 +32,14 @@ $(function () {
       console.error(JSON.stringify(status, null, 2))
       console.error(JSON.stringify(error, null, 2))
     })
+  }
+
+  $(window).keypress(function (event) {
+    if (!(event.which === 13 && event.ctrlKey) &&
+      !(event.which === 10 && event.ctrlKey)) {
+      return true
+    }
+    event.preventDefault()
+    run()
   })
 })

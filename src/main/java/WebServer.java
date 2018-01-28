@@ -128,6 +128,7 @@ public class WebServer {
     public static void main(final String[] args) throws ParseException {
         Options options = new Options();
         options.addOption("p", "port", true, "Port to use. Default is 8888.");
+        options.addOption("i", "interactive", false, "Enable interactive mode.");
         CommandLineParser parser = new BasicParser();
         CommandLine settings = parser.parse(options, args);
 
@@ -136,8 +137,12 @@ public class WebServer {
         } else {
             port(DEFAULT_SERVER_PORT);
         }
-        staticFiles.location("/webroot");
-        post("/run", (request, response) -> {
+        String location = "/";
+        if (settings.hasOption("i")) {
+            staticFiles.location("/webroot");
+            location = "/run";
+        }
+        post(location, (request, response) -> {
             JsonObject requestContent;
             try {
               requestContent = Json.parse(request.body()).asObject();
