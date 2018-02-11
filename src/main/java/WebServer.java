@@ -5,7 +5,10 @@ import org.codehaus.janino.ScriptEvaluator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.security.Permissions;
 import java.time.OffsetDateTime;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
@@ -56,6 +59,11 @@ public class WebServer {
             } catch (InvocationTargetException e) {
                 uploadContent.add("completed", false);
                 uploadContent.add("runtimeError", e.getMessage());
+                StringWriter writer = new StringWriter();
+                PrintWriter printWriter = new PrintWriter(writer);
+                e.printStackTrace(printWriter);
+                printWriter.flush();
+                uploadContent.add("runtimeStackTrace", writer.toString());
             }
             return uploadContent;
         }
@@ -71,7 +79,9 @@ public class WebServer {
         uploadContent.add("submitted", OffsetDateTime.now().toString());
 
         ScriptEvaluator scriptEvaluator = new ScriptEvaluator();
-        scriptEvaluator.setNoPermissions();
+        Permissions permissions = new Permissions();
+        permissions.add(new RuntimePermission("getProtectionDomain"));
+        scriptEvaluator.setPermissions(permissions);
 
         try {
             uploadContent.add("compileStart", OffsetDateTime.now().toString());
@@ -118,6 +128,7 @@ public class WebServer {
         }
     }
 
+
     static {
         System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
         System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
@@ -155,6 +166,7 @@ public class WebServer {
                 requestContent.add("received", OffsetDateTime.now().toString());
                 run(requestContent);
                 requestContent.add("returned", OffsetDateTime.now().toString());
+                requestContent.add("version", "0.2");
                 response.type("application/json; charset=utf-8");
                 return requestContent.toString();
             } catch (Exception e) {

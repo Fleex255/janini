@@ -17,13 +17,14 @@ $(function () {
     $.post("/run", JSON.stringify({
       source: source.getValue() + "\n"
     })).done(result => {
+      console.log(result)
       if (result.completed) {
         $("#output pre").text(result.output)
       } else if (result.timeout) {
         $("#output pre").html(`<span class="text-danger">Timeout</span>`)
       } else if (!result.compiled) {
         $("#output pre").html(`<span class="text-danger">Compiler error:\n${ result.compileError }</span>`)
-      } else if (!result.ran) {
+      } else if (!result.completed) {
         $("#output pre").html(`<span class="text-danger">Runtime error:\n${ result.runtimeError }</span>`)
       }
     }).fail((xhr, status, error) => {
