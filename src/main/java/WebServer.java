@@ -2,12 +2,12 @@ import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import org.apache.commons.cli.*;
 import org.codehaus.janino.ScriptEvaluator;
+import org.codehaus.janino.SimpleCompiler;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.security.Permissions;
 import java.time.OffsetDateTime;
 import java.util.concurrent.Callable;
@@ -32,6 +32,21 @@ public class WebServer {
     private static final int DEFAULT_SERVER_PORT = 8888;
 
     /**
+     * Add a stack track to the current execution object.
+     *
+     * @param addTo the JSON object to add the stack trace to.
+     * @param e the exception that was thrown.
+     * @param as the field on the JSON object to set.
+     */
+    private static void addStackTrace(final JsonObject addTo, final Throwable e, final String as) {
+        StringWriter writer = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(writer);
+        e.printStackTrace(printWriter);
+        printWriter.flush();
+        addTo.add(as, writer.toString());
+    }
+
+    /**
      * Runnable subclass for execution.
      */
     static class RunCode implements Callable<JsonObject> {
@@ -42,7 +57,12 @@ public class WebServer {
         private ScriptEvaluator scriptEvaluator;
 
         /**
-         * Instantiates a new run code.
+         * Our runnable method for simple compiler execution.
+         */
+        private Method methodToRun;
+
+        /**
+         * Instantiates a new run code with a script to run.
          *
          * @param setScriptEvaluator the script evaluator to use
          */
@@ -50,20 +70,29 @@ public class WebServer {
             scriptEvaluator = setScriptEvaluator;
         }
 
+        /**
+         * Instantiate a new run code object with a class method to run.
+         *
+         * @param setMethodToRun the method to run
+         */
+        RunCode(final Method setMethodToRun) {
+            methodToRun = setMethodToRun;
+        }
+
         @Override
         public JsonObject call() {
             JsonObject uploadContent = new JsonObject();
             try {
-                scriptEvaluator.evaluate(new Object[0]);
+                if (scriptEvaluator != null) {
+                    scriptEvaluator.evaluate(new Object[0]);
+                } else if (methodToRun != null) {
+                    methodToRun.invoke(null, (Object) new String[] {});
+                }
                 uploadContent.add("completed", true);
-            } catch (InvocationTargetException e) {
+            } catch (InvocationTargetException | IllegalAccessException | IllegalArgumentException e) {
                 uploadContent.add("completed", false);
                 uploadContent.add("runtimeError", e.getMessage());
-                StringWriter writer = new StringWriter();
-                PrintWriter printWriter = new PrintWriter(writer);
-                e.printStackTrace(printWriter);
-                printWriter.flush();
-                uploadContent.add("runtimeStackTrace", writer.toString());
+                addStackTrace(uploadContent, e, "runtimeStackTrace");
             }
             return uploadContent;
         }
@@ -78,24 +107,59 @@ public class WebServer {
     public static synchronized void run(final JsonObject uploadContent) {
         uploadContent.add("submitted", OffsetDateTime.now().toString());
 
-        ScriptEvaluator scriptEvaluator = new ScriptEvaluator();
-        Permissions permissions = new Permissions();
-        permissions.add(new RuntimePermission("getProtectionDomain"));
-        scriptEvaluator.setPermissions(permissions);
-
-        try {
-            uploadContent.add("compileStart", OffsetDateTime.now().toString());
-            scriptEvaluator.cook(uploadContent.get("source").asString());
-            uploadContent.add("compiled", true);
-        } catch (Throwable e) {
-            uploadContent.add("compiled", false);
-            uploadContent.add("compileError", e.getMessage());
-            return;
-        } finally {
-            uploadContent.add("compileFinish", OffsetDateTime.now().toString());
+        RunCode runCode = null;
+        String runAs;
+        if (uploadContent.get("as") != null) {
+            runAs = uploadContent.get("as").asString();
+        } else {
+            runAs = "script";
         }
+        if (runAs.equals("script")) {
+            ScriptEvaluator scriptEvaluator = new ScriptEvaluator();
+            Permissions permissions = new Permissions();
+            permissions.add(new RuntimePermission("getProtectionDomain"));
+            scriptEvaluator.setPermissions(permissions);
 
-        RunCode runCode = new RunCode(scriptEvaluator);
+            try {
+                uploadContent.add("compileStart", OffsetDateTime.now().toString());
+                scriptEvaluator.cook(uploadContent.get("source").asString());
+                uploadContent.add("compiled", true);
+
+                runCode = new RunCode(scriptEvaluator);
+            } catch (Throwable e) {
+                uploadContent.add("compiled", false);
+                uploadContent.add("compileError", e.getMessage());
+                addStackTrace(uploadContent, e, "compileStackTrace");
+                return;
+            } finally {
+                uploadContent.add("compileFinish", OffsetDateTime.now().toString());
+            }
+        } else if (runAs.equals("compiler")) {
+            InputStream stream = new ByteArrayInputStream(uploadContent.get("source")
+                    .asString().getBytes(StandardCharsets.UTF_8));
+            try {
+                ClassLoader classLoader = new SimpleCompiler("", stream).getClassLoader();
+                uploadContent.add("compiled", true);
+                Class<?> c = classLoader.loadClass(uploadContent.get("class").asString());
+                String mainMethod = "main";
+                if (uploadContent.get("main") != null) {
+                    mainMethod = uploadContent.get("main").asString();
+                }
+                Method methodToRun = c.getMethod(mainMethod, String[].class);
+
+                runCode = new RunCode(methodToRun);
+            } catch (Throwable e) {
+                uploadContent.add("compiled", false);
+                uploadContent.add("compileError", e.getMessage());
+                addStackTrace(uploadContent, e, "compileStackTrace");
+                return;
+            } finally {
+                uploadContent.add("compileFinish", OffsetDateTime.now().toString());
+            }
+        }
+        if (runCode == null) {
+            return;
+        }
         FutureTask<JsonObject> futureTask = new FutureTask<>(runCode);
         Thread executionThread = new Thread(futureTask);
 
@@ -105,17 +169,19 @@ public class WebServer {
         PrintStream err = System.err;
         System.setOut(combinedStream);
         System.setErr(combinedStream);
+
         try {
             executionThread.start();
             uploadContent.add("runStart", OffsetDateTime.now().toString());
             JsonObject executionContent = futureTask.get(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
             uploadContent.add("timeout", false);
             uploadContent.merge(executionContent);
-        } catch (Exception exception) {
+        } catch (Throwable e) {
             futureTask.cancel(true);
             executionThread.stop();
             uploadContent.set("completed", false);
             uploadContent.set("timeout", true);
+            addStackTrace(uploadContent, e, "runtimeStackTrace");
         } finally {
             uploadContent.add("runFinish", OffsetDateTime.now().toString());
             System.out.flush();
@@ -127,7 +193,6 @@ public class WebServer {
             }
         }
     }
-
 
     static {
         System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
@@ -166,7 +231,7 @@ public class WebServer {
                 requestContent.add("received", OffsetDateTime.now().toString());
                 run(requestContent);
                 requestContent.add("returned", OffsetDateTime.now().toString());
-                requestContent.add("version", "0.2");
+                requestContent.add("version", "0.3");
                 response.type("application/json; charset=utf-8");
                 return requestContent.toString();
             } catch (Exception e) {

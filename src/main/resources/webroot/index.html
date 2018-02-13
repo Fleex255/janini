@@ -29,12 +29,23 @@
   <div class="container">
     <div class="row mt-5">
       <div class="col-12">
-        <div id="output">
+        <div id="runScriptOutput" class="output">
           <pre>&gt; Hit Control-Enter to run your Java code...</pre>
         </div>
       </div>
+      <div id="runScript" class="container col-12 input">
+        <textarea class="codemirror">int x = 0;
+System.out.println(x);</textarea>
+      </div>
+    </div>
+    <div class="row mt-5">
       <div class="col-12">
-        <textarea id="input">int x = 0;
+        <div id="runClassOutput" class="output">
+          <pre>&gt; Hit Control-Enter to run your Java code...</pre>
+        </div>
+      </div>
+      <div id="runClass" class="container col-12 input">
+        <textarea class="codemirror">int x = 0;
 System.out.println(x);</textarea>
       </div>
     </div>

@@ -1,12 +1,12 @@
-#input {
+.input {
   font-family: 'Inconsolata', monospace;
 }
-#output {
+.output {
   background-color: #202020;
 }
-#output pre {
+.output pre {
   background-color: #202020;
-  height: 10rem;
+  height: 5rem;
   font-family: 'Inconsolata', monospace;
   color: #F5F5F5;
   overflow-y: scroll;

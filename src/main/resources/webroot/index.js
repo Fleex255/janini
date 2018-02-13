@@ -1,31 +1,44 @@
 /* global $, CodeMirror, alert */
 
 $(function () {
-  let source = CodeMirror.fromTextArea($('#input').get(0), {
-    mode: 'text/x-java',
-    lineNumbers: true,
-    matchBrackets: true
+  let editors = {}
+  $('textarea.codemirror').each(function() {
+    editors[$(this).closest('div.container').attr('id')] = CodeMirror.fromTextArea($(this).get(0), {
+      mode: 'text/x-java',
+      lineNumbers: true,
+      matchBrackets: true
+    })
   })
 
-  let run = () => {
+  let run = (id) => {
+    let source = editors[id]
+    let output = $(`#${ id }Output pre`)
+
     let toRun = source.getValue()
     if (toRun.trim() === "") {
-      $("#output pre").text(`> Hit Control-Enter to run your Java code...`)
+      output.html(`&lt; Hit Control-Enter to run your Java code...`)
       return
     }
-
-    $.post("/run", JSON.stringify({
+    let run = {
       source: source.getValue() + "\n"
-    })).done(result => {
+    }
+    if (id === "runClass") {
+      run.as = "compiler"
+      run.class = "Example"
+    } else {
+      run.as = "script"
+    }
+    console.log(run)
+    $.post("/run", JSON.stringify(run)).done(result => {
       console.log(result)
       if (result.completed) {
-        $("#output pre").text(result.output)
+        output.text(result.output)
       } else if (result.timeout) {
-        $("#output pre").html(`<span class="text-danger">Timeout</span>`)
+        output.html(`<span class="text-danger">Timeout</span>`)
       } else if (!result.compiled) {
-        $("#output pre").html(`<span class="text-danger">Compiler error:\n${ result.compileError }</span>`)
+        output.html(`<span class="text-danger">Compiler error:\n${ result.compileError }</span>`)
       } else if (!result.completed) {
-        $("#output pre").html(`<span class="text-danger">Runtime error:\n${ result.runtimeError }</span>`)
+        output.html(`<span class="text-danger">Runtime error:\n${ result.runtimeError }</span>`)
       }
     }).fail((xhr, status, error) => {
       console.error("Request failed")
@@ -41,6 +54,6 @@ $(function () {
       return true
     }
     event.preventDefault()
-    run()
+    run($(event.target).closest('div.container').attr('id'))
   })
 })
