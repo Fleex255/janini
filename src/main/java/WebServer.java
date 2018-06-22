@@ -7,6 +7,7 @@ import org.codehaus.janino.SimpleCompiler;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.security.Permissions;
 import java.time.OffsetDateTime;
@@ -20,6 +21,11 @@ import static spark.Spark.*;
  * A small web server that runs arbitrary Java code.
  */
 public class WebServer {
+
+    /**
+     * Max timeout for code execution.
+     */
+    private static final int MAX_TIMEOUT = 1000;
 
     /**
      * Default timeout for code execution.
@@ -114,10 +120,12 @@ public class WebServer {
         } else {
             runAs = "script";
         }
+
+        Permissions permissions = new Permissions();
+        permissions.add(new RuntimePermission("getProtectionDomain"));
+
         if (runAs.equals("script")) {
             ScriptEvaluator scriptEvaluator = new ScriptEvaluator();
-            Permissions permissions = new Permissions();
-            permissions.add(new RuntimePermission("getProtectionDomain"));
             scriptEvaluator.setPermissions(permissions);
 
             try {
@@ -138,15 +146,26 @@ public class WebServer {
             InputStream stream = new ByteArrayInputStream(uploadContent.get("source")
                     .asString().getBytes(StandardCharsets.UTF_8));
             try {
-                ClassLoader classLoader = new SimpleCompiler("", stream).getClassLoader();
+                SimpleCompiler simpleCompiler = new SimpleCompiler();
+                simpleCompiler.setPermissions(permissions);
+                simpleCompiler.cook("", stream);
+                ClassLoader classLoader = simpleCompiler.getClassLoader();
+
                 uploadContent.add("compiled", true);
-                Class<?> c = classLoader.loadClass(uploadContent.get("class").asString());
+                Class<?> c;
+                try {
+                    c = classLoader.loadClass(uploadContent.get("class").asString());
+                } catch (Throwable e) {
+                    throw new Exception("Class " + uploadContent.get("class").asString() + " is not defined");
+                }
                 String mainMethod = "main";
                 if (uploadContent.get("main") != null) {
                     mainMethod = uploadContent.get("main").asString();
                 }
                 Method methodToRun = c.getMethod(mainMethod, String[].class);
-
+                if (!Modifier.isStatic(methodToRun.getModifiers())) {
+                    throw new Exception(uploadContent.get("class").asString() + "." + mainMethod + " must be static");
+                }
                 runCode = new RunCode(methodToRun);
             } catch (Throwable e) {
                 uploadContent.add("compiled", false);
@@ -173,7 +192,15 @@ public class WebServer {
         try {
             executionThread.start();
             uploadContent.add("runStart", OffsetDateTime.now().toString());
-            JsonObject executionContent = futureTask.get(DEFAULT_TIMEOUT, TimeUnit.MILLISECONDS);
+            int timeout = DEFAULT_TIMEOUT;
+            if (uploadContent.get("timeout") != null) {
+                timeout = uploadContent.get("timeout").asInt();
+            }
+            if (timeout > MAX_TIMEOUT) {
+                timeout = MAX_TIMEOUT;
+            }
+            uploadContent.set("timeoutLength", timeout);
+            JsonObject executionContent = futureTask.get(timeout, TimeUnit.MILLISECONDS);
             uploadContent.add("timeout", false);
             uploadContent.merge(executionContent);
         } catch (Throwable e) {
@@ -224,6 +251,7 @@ public class WebServer {
             staticFiles.location("/webroot");
             location = "/run";
         }
+        
         post(location, (request, response) -> {
             JsonObject requestContent;
             try {
@@ -231,7 +259,7 @@ public class WebServer {
                 requestContent.add("received", OffsetDateTime.now().toString());
                 run(requestContent);
                 requestContent.add("returned", OffsetDateTime.now().toString());
-                requestContent.add("version", "0.3");
+                requestContent.add("version", "0.3.1");
                 response.type("application/json; charset=utf-8");
                 return requestContent.toString();
             } catch (Exception e) {
