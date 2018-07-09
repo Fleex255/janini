@@ -106,7 +106,7 @@ public class Question {
     fun testParallelExecution() {
 
         listOf(0, 1, 2, 3, 4, 6, 7, 8).parallelStream()
-                .forEach({ i ->
+                .forEach{ i ->
                     val source = """
 public class Question {
     public static void main(String[] unused) {
@@ -122,8 +122,8 @@ public class Question {
                     testObject.add("source", source)
                     WebServer.run(testObject)
                     isOK(testObject)
-                    Assert.assertEquals(testObject.get("output").asString().length, 1024);
-                })
+                    Assert.assertEquals(testObject.get("output").asString().length, 1024)
+                }
 
     }
 }
