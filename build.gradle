@@ -5,6 +5,7 @@
 
 apply plugin: 'java'
 apply plugin: 'checkstyle'
+apply plugin: 'kotlin'
 
 repositories {
     jcenter()
@@ -14,26 +15,29 @@ configurations {
 }
 
 buildscript {
+    ext.kotlin_version = '1.2.51'
     repositories {
         jcenter()
         maven { url 'https://jitpack.io' }
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 dependencies {
     compile 'com.sparkjava:spark-core:2.7.1'
     compile 'org.codehaus.janino:janino:3.0.8'
-    compile 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
+    compile 'com.eclipsesource.minimal-json:minimal-json:0.9.5'
     compile 'org.slf4j:slf4j-simple:1.7.25'
     compile 'commons-cli:commons-cli:20040117.000000'
-    compile 'org.slf4j:slf4j-simple:1.7.21'
     shadow 'com.sparkjava:spark-core:2.7.1'
     shadow 'org.codehaus.janino:janino:3.0.8'
-    shadow 'com.eclipsesource.minimal-json:minimal-json:0.9.4'
+    shadow 'com.eclipsesource.minimal-json:minimal-json:0.9.5'
     shadow 'org.slf4j:slf4j-simple:1.7.25'
     shadow 'commons-cli:commons-cli:20040117.000000'
-    shadow 'org.slf4j:slf4j-simple:1.7.21'
     testCompile 'org.testng:testng:6.9.6'
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 }
 
 checkstyle {
@@ -60,3 +64,14 @@ jar {
 }
 
 // vim: ts=4:sw=4:et:ft=groovy
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}

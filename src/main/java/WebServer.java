@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static spark.Spark.*;
 
@@ -21,6 +22,11 @@ import static spark.Spark.*;
  * A small web server that runs arbitrary Java code.
  */
 public class WebServer {
+
+    /**
+     * Lock to serialize System.out and System.err.
+     */
+    private static final ReentrantLock OUTPUT_LOCK = new ReentrantLock();
 
     /**
      * Max timeout for code execution.
@@ -45,11 +51,11 @@ public class WebServer {
      * @param as the field on the JSON object to set.
      */
     private static void addStackTrace(final JsonObject addTo, final Throwable e, final String as) {
-        StringWriter writer = new StringWriter();
-        PrintWriter printWriter = new PrintWriter(writer);
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
         e.printStackTrace(printWriter);
-        printWriter.flush();
-        addTo.add(as, writer.toString());
+        String s = stringWriter.toString();
+        addTo.add(as, s);
     }
 
     /**
@@ -110,7 +116,7 @@ public class WebServer {
      * @param uploadContent a JSON object describing what to do
      */
     @SuppressWarnings("deprecation")
-    public static synchronized void run(final JsonObject uploadContent) {
+    static void run(final JsonObject uploadContent) {
         uploadContent.add("submitted", OffsetDateTime.now().toString());
 
         RunCode runCode = null;
@@ -179,6 +185,8 @@ public class WebServer {
         if (runCode == null) {
             return;
         }
+
+        OUTPUT_LOCK.lock();
         FutureTask<JsonObject> futureTask = new FutureTask<>(runCode);
         Thread executionThread = new Thread(futureTask);
 
@@ -218,6 +226,7 @@ public class WebServer {
             if (uploadContent.get("completed").asBoolean()) {
                 uploadContent.add("output", combinedOutputStream.toString());
             }
+            OUTPUT_LOCK.unlock();
         }
     }
 
@@ -246,13 +255,12 @@ public class WebServer {
         } else {
             port(DEFAULT_SERVER_PORT);
         }
-        String location = "/";
+
         if (settings.hasOption("i")) {
             staticFiles.location("/webroot");
-            location = "/run";
         }
-        
-        post(location, (request, response) -> {
+
+        post("/run", (request, response) -> {
             JsonObject requestContent;
             try {
                 requestContent = Json.parse(request.body()).asObject();
