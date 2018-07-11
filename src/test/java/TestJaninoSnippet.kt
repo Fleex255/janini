@@ -5,13 +5,13 @@ import org.testng.annotations.Test
 /**
  * Test the WebServer class.
  */
-class TestJaniniSnippet {
+class TestJaninoSnippet {
     /**
      * Test simple script.
      */
     @Test
     fun testMath() {
-        val snippet = JaniniSnippet().run("""
+        val snippet = JaninoSnippet().run("""
 int a = 3;
 int b = 4;
 System.out.print(a + b);
@@ -21,7 +21,7 @@ System.out.print(a + b);
 
     @Test
     fun testExit() {
-        val snippet = JaniniSnippet().run("""
+        val snippet = JaninoSnippet().run("""
 System.exit(-1);
 """)
         Assert.assertFalse(snippet.executed)
@@ -30,7 +30,7 @@ System.exit(-1);
 
     @Test
     fun testNullDeference() {
-        val snippet = JaniniSnippet().run("""
+        val snippet = JaninoSnippet().run("""
 Object reference = null;
 System.out.println(reference.toString());
 """)
@@ -40,7 +40,7 @@ System.out.println(reference.toString());
 
     @Test
     fun testTimeout() {
-        val snippet = JaniniSnippet().run("""
+        val snippet = JaninoSnippet().run("""
 int i = 0;
 while (true) {
     i++;
@@ -54,7 +54,7 @@ while (true) {
 
     @Test
     fun testPrivateVisibility() {
-        val snippet = JaniniSnippet().run("""
+        val snippet = JaninoSnippet().run("""
 class Test {
   private int value;
 }
@@ -67,7 +67,7 @@ System.out.print(t.value);
 
     @Test
     fun testGenericsAreBroken() {
-        val snippet = JaniniSnippet()
+        val snippet = JaninoSnippet()
         try {
             snippet.run("""
 import java.util.ArrayList;
@@ -83,7 +83,7 @@ System.out.println(broken);
 
     @Test
     fun testGenericsWorkWithCasts() {
-        val snippet = JaniniSnippet().run("""
+        val snippet = JaninoSnippet().run("""
 import java.util.ArrayList;
 ArrayList<String> list = new ArrayList<String>();
 list.add("Geoffrey");

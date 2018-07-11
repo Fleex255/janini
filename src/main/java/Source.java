@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @SuppressWarnings({"checkstyle:visibilitymodifier", "checkstyle:constantname"})
 public abstract class Source implements Callable<Void> {
     /** Compiler used. */
-    protected String compiler;
+    protected String compiler = "";
 
     /** Time that the source upload was received. */
     protected OffsetDateTime received;

@@ -31,7 +31,7 @@
       </configuration>
     </facet>
   </component>
-  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_9">
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_1_8">
     <output url="file://$MODULE_DIR$/../../out/production/classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../src/main">
@@ -42,6 +42,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="Gradle: com.sparkjava:spark-core:2.7.1" level="project" />
     <orderEntry type="library" name="Gradle: org.codehaus.janino:janino:3.0.8" level="project" />
+    <orderEntry type="library" name="Gradle: org.codehaus.janino:commons-compiler-jdk:3.0.8" level="project" />
     <orderEntry type="library" name="Gradle: com.eclipsesource.minimal-json:minimal-json:0.9.5" level="project" />
     <orderEntry type="library" name="Gradle: org.slf4j:slf4j-simple:1.7.25" level="project" />
     <orderEntry type="library" name="Gradle: commons-cli:commons-cli:20040117.000000" level="project" />
