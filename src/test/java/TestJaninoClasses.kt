@@ -142,6 +142,21 @@ public class Question {
     }
 
     @Test
+    fun testImports() {
+        val classes = JaninoClasses().run("""
+import java.util.ArrayList;
+
+public class Question {
+    public static void main(final String[] unused) {
+        System.out.print("Worked");
+    }
+}
+""")
+        Assert.assertEquals(classes.output, "Worked")
+        Assert.assertEquals(classes.compiler, "Janino")
+    }
+
+    @Test
     fun testGenericsWorkUsingJDK() {
         val classes = JaninoClasses("JDK").run("""
 import java.util.ArrayList;
