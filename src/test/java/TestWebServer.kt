@@ -12,23 +12,6 @@ class TestWebServer {
     }
 
     /**
-     * Test simple script.
-     */
-    @Test
-    fun testSimpleScript() {
-        val testObject = JsonObject()
-        val source = """
-int a = 3;
-int b = 4;
-System.out.println(a + b);
-""".trim()
-        testObject.add("source", source)
-        WebServer.run(testObject)
-        isOK(testObject)
-        Assert.assertEquals(Integer.parseInt(testObject.get("output").asString().trim()), 7)
-    }
-
-    /**
      * Test crash script.
      */
     @Test
