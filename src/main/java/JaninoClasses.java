@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 public class JaninoClasses extends Source {
 
     /** Sources to compile. */
-    public String source;
+    public String[] sources;
 
     /** Default class name to load. */
     public String className = "Question";
@@ -62,7 +62,10 @@ public class JaninoClasses extends Source {
         org.codehaus.janino.SimpleCompiler simpleCompiler =
                 new org.codehaus.janino.SimpleCompiler();
         simpleCompiler.setPermissions(permissions);
-        simpleCompiler.cook(new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));
+        for (String source : sources) {
+            simpleCompiler.cook(new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));
+            simpleCompiler.setParentClassLoader(simpleCompiler.getClassLoader());
+        }
         return simpleCompiler.getClassLoader();
     }
 
@@ -77,7 +80,9 @@ public class JaninoClasses extends Source {
         org.codehaus.commons.compiler.jdk.SimpleCompiler simpleCompiler =
                 new org.codehaus.commons.compiler.jdk.SimpleCompiler();
         simpleCompiler.setPermissions(permissions);
-        simpleCompiler.cook(new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));
+        for (String source : sources) {
+            simpleCompiler.cook(new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));
+        }
         return simpleCompiler.getClassLoader();
     }
 
@@ -136,8 +141,8 @@ public class JaninoClasses extends Source {
      * @return this object for chaining
      * @throws Exception if compilation fails
      */
-    public Source run(final String setSource) throws Exception {
-        source = setSource;
+    public Source run(final String... setSource) throws Exception {
+        sources = setSource;
         return super.run();
     }
 }

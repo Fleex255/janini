@@ -7,7 +7,7 @@ import org.testng.annotations.Test
  */
 class TestJaninoClasses {
     /**
-     * Test simple class.
+     * Test simple math.
      */
     @Test
     fun testMath() {
@@ -25,7 +25,7 @@ public class Question {
     }
 
     /**
-     * Test exit class.
+     * Test attempt to exit.
      */
     @Test
     fun testExit() {
@@ -99,27 +99,8 @@ public class Question {
     }
 
     /**
-     * Test multiple classes in same source.
+     * Verify the Janino doesn't support generics.
      */
-    @Test
-    fun testMultipleClassesInSingleSource() {
-        val classes = JaninoClasses().run("""
-public class Other {
-    public String toString() {
-        return "Working";
-    }
-}
-public class Question {
-    public static void main(final String[] unused) {
-        Other other = new Other();
-        System.out.print(other.toString());
-    }
-}
-""")
-
-        Assert.assertEquals(classes.output, "Working")
-    }
-
     @Test
     fun testGenericsAreBrokenUsingJanino() {
         val classes = JaninoClasses("Janino")
@@ -141,21 +122,9 @@ public class Question {
         Assert.assertFalse(classes.compiled)
     }
 
-    @Test
-    fun testImports() {
-        val classes = JaninoClasses().run("""
-import java.util.ArrayList;
-
-public class Question {
-    public static void main(final String[] unused) {
-        System.out.print("Worked");
-    }
-}
-""")
-        Assert.assertEquals(classes.output, "Worked")
-        Assert.assertEquals(classes.compiler, "Janino")
-    }
-
+    /**
+     * Verify that generics work using the JDK compiler.
+     */
     @Test
     fun testGenericsWorkUsingJDK() {
         val classes = JaninoClasses("JDK").run("""
@@ -175,6 +144,9 @@ public class Question {
         Assert.assertEquals(classes.compiler, "JDK")
     }
 
+    /**
+     * Verify that generics trigger the JDK.
+     */
     @Test
     fun testGenericsTriggerTheJDK() {
         val classes = JaninoClasses().run("""
@@ -192,5 +164,146 @@ public class Question {
 
         Assert.assertEquals(classes.output, "Geoffrey")
         Assert.assertEquals(classes.compiler, "JDK")
+    }
+
+    /**
+     * Verify that imports work properly.
+     */
+    @Test
+    fun testImports() {
+        val classes = JaninoClasses().run("""
+import java.util.ArrayList;
+
+public class Question {
+    public static void main(final String[] unused) {
+        System.out.print("Worked");
+    }
+}
+""")
+        Assert.assertEquals(classes.output, "Worked")
+        Assert.assertEquals(classes.compiler, "Janino")
+    }
+
+    /**
+     * Test multiple classes in same source.
+     */
+    @Test
+    fun testMultipleClassesInSingleSource() {
+        val classes = JaninoClasses().run("""
+    public class Other {
+        public String toString() {
+            return "Working";
+        }
+    }
+    public class Question {
+        public static void main(final String[] unused) {
+            Other other = new Other();
+            System.out.print(other.toString());
+        }
+    }
+    """)
+
+        Assert.assertEquals(classes.output, "Working")
+    }
+
+    /**
+     * Test multiple classes in same source in wrong order.
+     */
+    @Test
+    fun testMultipleClassesInSingleSourceInWrongOrder() {
+        val classes = JaninoClasses().run("""
+    public class Question {
+        public static void main(final String[] unused) {
+            Other other = new Other();
+            System.out.print(other.toString());
+        }
+    }
+    public class Other {
+        public String toString() {
+            return "Working";
+        }
+    }
+    """)
+
+        Assert.assertEquals(classes.output, "Working")
+    }
+
+    /**
+     * Test multiple classes in multiple sources.
+     */
+    @Test
+    fun testMultipleClassesInMultipleSources() {
+        val classes = JaninoClasses("Janino").run("""
+public class Other {
+    public String toString() {
+        return "Working";
+    }
+}
+""","""
+public class Question {
+    public static void main(final String[] unused) {
+        Other other = new Other();
+        System.out.print(other.toString());
+    }
+}
+""")
+
+        Assert.assertEquals(classes.output, "Working")
+    }
+
+    /**
+     * Test multiple classes in multiple sources with imports.
+     */
+    @Test
+    fun testMultipleClassesInMultipleSourcesWitImports() {
+        val classes = JaninoClasses("Janino").run("""
+import java.util.HashMap;
+public class Other {
+    public String toString() {
+        HashMap hashMap = new HashMap();
+        return "Working";
+    }
+}
+""","""
+import java.util.ArrayList;
+public class Question {
+    public static void main(final String[] unused) {
+        ArrayList arrayList = new ArrayList();
+        Other other = new Other();
+        System.out.print(other.toString());
+    }
+}
+""")
+
+        Assert.assertEquals(classes.output, "Working")
+    }
+
+    /**
+     * Test multiple classes in multiple sources in the wrong order.
+     *
+     * Currently we expect this to fail.
+     */
+    @Test
+    fun testMultipleClassesInMultipleSourcesInWrongOrder() {
+        val classes = JaninoClasses("Janino")
+        try {
+            classes.run("""
+public class Question {
+    public static void main(final String[] unused) {
+        Other other = new Other();
+        System.out.print(other.toString());
+    }
+}
+""","""
+    public class Other {
+    public String toString() {
+        return "Working";
+    }
+}
+""")
+        } catch (e : CompileException) {
+            return
+        }
+        Assert.fail("Should fail")
     }
 }
