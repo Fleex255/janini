@@ -241,7 +241,7 @@ public abstract class Source implements Callable<Void> {
      * @param end the ending timestamp
      * @return the difference between the two timestamps in seconds
      */
-    private double diffTimestamps(final OffsetDateTime start, final OffsetDateTime end) {
+    private static double diffTimestamps(final OffsetDateTime start, final OffsetDateTime end) {
        return (end.toInstant().toEpochMilli() - start.toInstant().toEpochMilli())
                / MILLISECONDS_TO_SECONDS;
     }
