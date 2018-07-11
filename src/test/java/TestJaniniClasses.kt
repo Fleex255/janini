@@ -7,90 +7,88 @@ import org.testng.annotations.Test
  */
 class TestJaniniClasses {
     /**
-     * Test simple script.
+     * Test simple class.
      */
     @Test
     fun testMath() {
-        val snippet = JaniniSnippet().run("""
-int a = 3;
-int b = 4;
-System.out.print(a + b);
+        val snippet = JaniniClasses().run("""
+public class Question {
+    public static void main(String[] unused) {
+        int a = 3;
+        int b = 4;
+        System.out.print(a + b);
+    }
+}
 """)
         Assert.assertEquals(snippet.output, "7")
     }
 
+    /**
+     * Test exit class.
+     */
     @Test
     fun testExit() {
-        val snippet = JaniniSnippet().run("""
-System.exit(-1);
-""")
-        Assert.assertFalse(snippet.executed)
-        Assert.assertTrue(snippet.crashed)
+        val snippet = JaniniClasses().run("""
+public class Question {
+    public static void main(String[] unused) {
+        System.exit(-1);
     }
-
-    @Test
-    fun testNullDeference() {
-        val snippet = JaniniSnippet().run("""
-Object reference = null;
-System.out.println(reference.toString());
-""")
-        Assert.assertFalse(snippet.executed)
-        Assert.assertTrue(snippet.crashed)
-    }
-
-    @Test
-    fun testTimeout() {
-        val snippet = JaniniSnippet().run("""
-int i = 0;
-while (true) {
-    i++;
 }
 """)
-        Assert.assertFalse(snippet.executed)
-        Assert.assertTrue(snippet.timedOut)
-        Assert.assertTrue(snippet.timeoutLength / 1000.0 <= snippet.executionLength)
-        Assert.assertTrue(snippet.executionLength <= (snippet.timeoutLength / 1000.0 * 1.2))
+        Assert.assertFalse(snippet.executed);
     }
 
+    /**
+     * Test wrong class name.
+     */
     @Test
-    fun testPrivateVisibility() {
-        val snippet = JaniniSnippet().run("""
-class Test {
-  private int value;
-}
-Test t = new Test();
-t.value = 5;
-System.out.print(t.value);
-""")
-        Assert.assertEquals(snippet.output, "5")
-    }
-
-    @Test
-    fun testGenericsAreBroken() {
-        val snippet = JaniniSnippet()
+    fun testWrongClassName() {
+        val snippet = JaniniClasses()
         try {
             snippet.run("""
-import java.util.ArrayList;
-ArrayList<String> list = new ArrayList<String>();
-list.add("Geoffrey");
-String broken = list.get(0);
-System.out.println(broken);
-        """)
-        } catch (e: CompileException) { }
-
-        Assert.assertFalse(snippet.compiled)
+public class Blah {
+    public static void main(String[] unused) {
+        System.out.println("Broken");
+    }
+}
+""")
+        } catch (e : ClassNotFoundException) { }
+        Assert.assertFalse(snippet.compiled);
     }
 
+    /**
+     * Test wrong method name.
+     */
     @Test
-    fun testGenericsWorkWithCasts() {
-        val snippet = JaniniSnippet().run("""
-import java.util.ArrayList;
-ArrayList<String> list = new ArrayList<String>();
-list.add("Geoffrey");
-String working = (String) list.get(0);
-System.out.print(working);
-        """)
-        Assert.assertTrue(snippet.executed);
-        Assert.assertEquals(snippet.output, "Geoffrey")
+    fun testWrongMethodName() {
+        val snippet = JaniniClasses()
+        try {
+            snippet.run("""
+public class Question {
+    public static void broken(String[] unused) {
+        System.out.println("Broken");
+    }
+}
+""")
+        } catch (e : NoSuchMethodException) { }
+        Assert.assertFalse(snippet.compiled);
+    }
+
+    /**
+     * Test wrong method signature.
+     */
+    @Test
+    fun testWrongMethodSignature() {
+        val snippet = JaniniClasses()
+        try {
+            snippet.run("""
+public class Question {
+    public static void main() {
+        System.out.println("Broken");
+    }
+}
+""")
+        } catch (e : NoSuchMethodException) { }
+        Assert.assertFalse(snippet.compiled);
     }
 }

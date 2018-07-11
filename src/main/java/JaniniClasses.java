@@ -82,4 +82,16 @@ public class JaniniClasses extends Source {
     public void doExecute() throws InvocationTargetException, IllegalAccessException {
         method.invoke(null, (Object) new String[] {});
     }
+
+    /**
+     * Convenience method for testing.
+     *
+     * @param setSource set the source of the JaniniClasses object
+     * @return this object for chaining
+     * @throws Exception if compilation fails
+     */
+    public Source run(final String setSource) throws Exception {
+        source = setSource;
+        return super.run();
+    }
 }
