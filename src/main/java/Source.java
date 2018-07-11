@@ -221,6 +221,16 @@ public abstract class Source implements Callable<Void> {
         return this;
     }
 
+    /**
+     * Compile and execute sources. Convenience method for compile + execute.
+     *
+     * @return this object for chaining
+     * @throws Exception if compilation or execution fails
+     */
+    public Source run() throws Exception {
+        return this.compile().execute();
+    }
+
     /** Convert milliseconds to seconds. */
     private static final double MILLISECONDS_TO_SECONDS = 1000.0;
 

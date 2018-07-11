@@ -54,9 +54,9 @@ public class JaniniSnippet extends Source {
      * @param setSource set the source of the JaniniSnippet object
      * @throws Exception if compilation fails
      */
-    public Source compile(final String setSource) throws Exception {
+    public Source run(final String setSource) throws Exception {
         source = setSource;
-        return super.compile();
+        return super.run();
     }
 
     /**
