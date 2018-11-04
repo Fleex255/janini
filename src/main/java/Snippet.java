@@ -91,8 +91,13 @@ public class Snippet extends Source {
             default:
                 try {
                     compileWithJanino();
-                } catch (CompileException unused) {
+                } catch (CompileException unused) { }
+                try {
                     compileWithJDK();
+                } catch (CompileException unused) {
+                    // Janino generates better error messages, so if the JDK fails try again
+                    // with Janino. Happily it's fast.
+                    compileWithJanino();
                 }
         }
     }

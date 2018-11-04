@@ -19,26 +19,29 @@ $(function () {
       output.html(`&lt; Hit Control-Enter to run your Java code...`)
       return
     }
-    let run = {
-      source: source.getValue() + "\n"
-    }
+    let run
+    source = source.getValue() + "\n"
     if (id === "runClass") {
-      run.as = "compiler"
-      run.class = "Example"
+      run = {
+        as: "SimpleCompiler", class: "Example",
+        sources: [ source ]
+      }
     } else {
-      run.as = "script"
+      run = {
+        as: "Snippet", source
+      }
     }
     console.log(run)
     $.post("/run", JSON.stringify(run)).done(result => {
       console.log(result)
-      if (result.completed) {
+      if (result.executed) {
         output.text(result.output)
-      } else if (result.timeout) {
+      } else if (result.timedOut) {
         output.html(`<span class="text-danger">Timeout</span>`)
       } else if (!result.compiled) {
-        output.html(`<span class="text-danger">Compiler error:\n${ result.compileError }</span>`)
-      } else if (!result.completed) {
-        output.html(`<span class="text-danger">Runtime error:\n${ result.runtimeError }</span>`)
+        output.html(`<span class="text-danger">Compiler error:\n${ result.compilationErrorMessage }</span>`)
+      } else if (!result.executed) {
+        output.html(`<span class="text-danger">Runtime error:\n${ result.executionErrorMessage }</span>`)
       }
     }).fail((xhr, status, error) => {
       console.error("Request failed")

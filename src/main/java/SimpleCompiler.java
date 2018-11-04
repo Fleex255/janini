@@ -119,8 +119,15 @@ public class SimpleCompiler extends Source {
             default:
                 try {
                     classLoader = compileWithJanino();
-                } catch (CompileException unused) {
+                    break;
+                } catch (CompileException ignored) { }
+                try {
                     classLoader = compileWithJDK();
+                    break;
+                } catch (CompileException unused) {
+                    // Janino generates better error messages, so if the JDK fails try again
+                    // with Janino. Happily it's fast.
+                    classLoader = compileWithJanino();
                 }
                 break;
         }
@@ -148,9 +155,8 @@ public class SimpleCompiler extends Source {
      *
      * @param setSource set the source of the SimpleCompiler object
      * @return this object for chaining
-     * @throws Exception if compilation fails
      */
-    public Source run(final String... setSource) throws Exception {
+    public Source run(final String... setSource) {
         sources = setSource;
         return super.run();
     }
