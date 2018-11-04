@@ -1,4 +1,3 @@
-import org.codehaus.commons.compiler.CompileException
 import org.testng.Assert
 import org.testng.annotations.Test
 
@@ -68,50 +67,41 @@ System.out.print(t.value);
     @Test
     fun testGenericsAreBrokenUsingJanino() {
         val snippet = Snippet("Janino")
-        try {
-            snippet.run("""
+        snippet.run("""
 import java.util.ArrayList;
 ArrayList<String> list = new ArrayList<String>();
 list.add("Geoffrey");
 String broken = list.get(0);
 System.out.println(broken);
         """)
-        } catch (e: CompileException) { }
-
         Assert.assertFalse(snippet.compiled)
     }
 
     @Test
     fun testGenericsWorkUsingJDK() {
         val snippet = Snippet("JDK")
-        try {
-            snippet.run("""
+        snippet.run("""
 import java.util.ArrayList;
 ArrayList<String> list = new ArrayList<String>();
 list.add("Geoffrey");
 String working = list.get(0);
 System.out.print(working);
         """)
-        } catch (e: CompileException) { }
-
-        Assert.assertEquals(snippet.output, "Geoffrey");
+        Assert.assertEquals(snippet.output, "Geoffrey")
         Assert.assertEquals(snippet.compiler, "JDK")
     }
 
     @Test
     fun testGenericsTriggerTheJDK() {
         val snippet = Snippet()
-        try {
-            snippet.run("""
+        snippet.run("""
 import java.util.ArrayList;
 ArrayList<String> list = new ArrayList<String>();
 list.add("Geoffrey");
 String working = list.get(0);
 System.out.print(working);
         """)
-        } catch (e: CompileException) { }
-
-        Assert.assertEquals(snippet.output, "Geoffrey");
+        Assert.assertEquals(snippet.output, "Geoffrey")
         Assert.assertEquals(snippet.compiler, "JDK")
     }
 
@@ -124,7 +114,7 @@ list.add("Geoffrey");
 String working = (String) list.get(0);
 System.out.print(working);
         """)
-        Assert.assertTrue(snippet.executed);
+        Assert.assertTrue(snippet.executed)
         Assert.assertEquals(snippet.output, "Geoffrey")
     }
 }

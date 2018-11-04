@@ -7,7 +7,7 @@ import com.eclipsesource.json.JsonObject
  */
 class TestWebServer {
 
-    fun isOK(testObject : JsonObject) {
+    private fun isOK(testObject : JsonObject) {
         Assert.assertTrue(testObject.get("completed").asBoolean())
     }
 
@@ -18,7 +18,7 @@ class TestWebServer {
     fun testCrashScript() {
         val testObject = JsonObject()
         testObject.add("source", "System.exit(-1);")
-        WebServer.run(testObject)
+        WebServer.run(testObject.toString())
         // If this fails it shuts down the test runner
     }
 
@@ -39,7 +39,7 @@ public class Question {
     }
 }""".trim()
         testObject.add("source", source)
-        WebServer.run(testObject)
+        WebServer.run(testObject.toString())
         Assert.assertEquals(Integer.parseInt(testObject.get("output").asString().trim()), 7)
     }
 
@@ -58,7 +58,7 @@ public class Question {
     }
 }""".trim()
         testObject.add("source", source)
-        WebServer.run(testObject)
+        WebServer.run(testObject.toString())
         // If this fails it shuts down the test runner
     }
 
@@ -78,7 +78,7 @@ public class Question {
 }
 """.trim()
         testObject.add("source", source)
-        WebServer.run(testObject)
+        WebServer.run(testObject.toString())
         Assert.assertTrue(testObject.get("timeout").asBoolean())
     }
 
@@ -103,7 +103,7 @@ public class Question {
                     testObject.add("as", "compiler")
                     testObject.add("class", "Question")
                     testObject.add("source", source)
-                    WebServer.run(testObject)
+                    WebServer.run(testObject.toString())
                     isOK(testObject)
                     Assert.assertEquals(testObject.get("output").asString().length, 1024)
                 }

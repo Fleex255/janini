@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Base class for all execution strategies.
@@ -19,6 +20,11 @@ public abstract class Source implements Callable<Void> {
      * Compiler used.
      */
     protected String compiler = "";
+
+    /**
+     * How the source was run.
+     */
+    public String as = "";
 
     /**
      * Time that the source upload was received.
@@ -131,6 +137,11 @@ public abstract class Source implements Callable<Void> {
     protected transient Permissions permissions = new Permissions();
 
     /**
+     * Lock to serialize System.out and System.err.
+     */
+    private static final transient ReentrantLock OUTPUT_LOCK = new ReentrantLock();
+
+    /**
      * Create a new Source object.
      */
     Source() {
@@ -186,9 +197,8 @@ public abstract class Source implements Callable<Void> {
      * Throws an exception if compilation fails, with the type depending on how the code was being compiled.
      *
      * @return this object for chaining
-     * @throws Exception thrown if compilation fails
      */
-    public Source compile() throws Exception {
+    public final Source compile() {
         try {
             compileStarted = OffsetDateTime.now();
             doCompile();
@@ -196,7 +206,6 @@ public abstract class Source implements Callable<Void> {
         } catch (Exception e) {
             compilationErrorMessage = e.toString();
             compilationErrorStackTrace = stackTraceToString(e);
-            throw (e);
         } finally {
             compileFinished = OffsetDateTime.now();
             compileLength = diffTimestamps(compileStarted, compileFinished);
@@ -232,48 +241,55 @@ public abstract class Source implements Callable<Void> {
      * @return this object for chaining
      */
     @SuppressWarnings("deprecation")
-    public synchronized Source execute() {
-        FutureTask<Void> futureTask = new FutureTask<>(this);
-        Thread executionThread = new Thread(futureTask);
-
-        ByteArrayOutputStream combinedOutputStream = new ByteArrayOutputStream();
-        PrintStream combinedStream = new PrintStream(combinedOutputStream);
-        PrintStream old = System.out;
-        PrintStream err = System.err;
-        System.setOut(combinedStream);
-        System.setErr(combinedStream);
-
-        try {
-            executionThread.start();
-            futureTask.get(timeoutLength, TimeUnit.MILLISECONDS);
-            timedOut = false;
-        } catch (Throwable e) {
-            futureTask.cancel(true);
-            executionThread.stop();
-            timedOut = true;
-            executionErrorMessage = e.toString();
-            executionErrorStackTrace = stackTraceToString(e);
-        } finally {
-            executionFinished = OffsetDateTime.now();
-            executionLength = diffTimestamps(executionStarted, executionFinished);
-            System.out.flush();
-            System.err.flush();
-            System.setOut(old);
-            System.setErr(err);
-            if (executed) {
-                output = combinedOutputStream.toString();
-            }
+    public final Source execute() {
+        if (!compiled) {
+            return this;
         }
-        return this;
+        OUTPUT_LOCK.lock();
+        try {
+            FutureTask<Void> futureTask = new FutureTask<>(this);
+            Thread executionThread = new Thread(futureTask);
+
+            ByteArrayOutputStream combinedOutputStream = new ByteArrayOutputStream();
+            PrintStream combinedStream = new PrintStream(combinedOutputStream);
+            PrintStream old = System.out;
+            PrintStream err = System.err;
+            System.setOut(combinedStream);
+            System.setErr(combinedStream);
+
+            try {
+                executionThread.start();
+                futureTask.get(timeoutLength, TimeUnit.MILLISECONDS);
+                timedOut = false;
+            } catch (Throwable e) {
+                futureTask.cancel(true);
+                executionThread.stop();
+                timedOut = true;
+                executionErrorMessage = e.toString();
+                executionErrorStackTrace = stackTraceToString(e);
+            } finally {
+                executionFinished = OffsetDateTime.now();
+                executionLength = diffTimestamps(executionStarted, executionFinished);
+                System.out.flush();
+                System.err.flush();
+                System.setOut(old);
+                System.setErr(err);
+                if (executed) {
+                    output = combinedOutputStream.toString();
+                }
+            }
+            return this;
+        } finally {
+            OUTPUT_LOCK.unlock();
+        }
     }
 
     /**
      * Compile and execute sources. Convenience method for compile + execute.
      *
      * @return this object for chaining
-     * @throws Exception if compilation or execution fails
      */
-    public Source run() throws Exception {
+    public Source run() {
         return this.compile().execute();
     }
 

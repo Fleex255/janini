@@ -79,16 +79,13 @@ public class Question {
     @Test
     fun testWrongClassName() {
         val classes = SimpleCompiler()
-        try {
-            classes.run("""
+        classes.run("""
 public class Blah {
     public static void main(final String[] unused) {
         System.out.print("Broken");
     }
 }
 """)
-        } catch (e : ClassNotFoundException) { }
-
         Assert.assertFalse(classes.compiled)
     }
 
@@ -98,16 +95,14 @@ public class Blah {
     @Test
     fun testWrongMethodName() {
         val classes = SimpleCompiler()
-        try {
-            classes.run("""
+
+        classes.run("""
 public class Question {
     public static void broken(final String[] unused) {
         System.out.print("Broken");
     }
 }
 """)
-        } catch (e : NoSuchMethodException) { }
-
         Assert.assertFalse(classes.compiled)
     }
 
@@ -117,16 +112,13 @@ public class Question {
     @Test
     fun testWrongMethodSignature() {
         val classes = SimpleCompiler()
-        try {
-            classes.run("""
+        classes.run("""
 public class Question {
     public static void main() {
         System.out.print("Broken");
     }
 }
 """)
-        } catch (e : NoSuchMethodException) { }
-
         Assert.assertFalse(classes.compiled)
     }
 
@@ -136,8 +128,8 @@ public class Question {
     @Test
     fun testGenericsAreBrokenUsingJanino() {
         val classes = SimpleCompiler("Janino")
-        try {
-            classes.run("""
+
+        classes.run("""
 import java.util.ArrayList;
 
 public class Question {
@@ -149,8 +141,6 @@ public class Question {
     }
 }
 """)
-        } catch (e: CompileException) { }
-
         Assert.assertFalse(classes.compiled)
     }
 
@@ -318,8 +308,7 @@ public class Question {
     @Test
     fun testMultipleClassesInMultipleSourcesInWrongOrder() {
         val classes = SimpleCompiler("Janino")
-        try {
-            classes.run("""
+        classes.run("""
 public class Question {
     public static void main(final String[] unused) {
         Other other = new Other();
@@ -333,9 +322,6 @@ public class Question {
     }
 }
 """)
-        } catch (e : CompileException) {
-            return
-        }
-        Assert.fail("Should fail")
+        Assert.assertFalse(classes.compiled)
     }
 }
