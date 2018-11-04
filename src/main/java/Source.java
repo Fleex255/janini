@@ -5,6 +5,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ReflectPermission;
 import java.security.Permissions;
 import java.time.OffsetDateTime;
 import java.util.concurrent.*;
@@ -145,6 +146,8 @@ public abstract class Source implements Callable<Void> {
      */
     Source() {
         permissions.add(new RuntimePermission("getProtectionDomain"));
+        permissions.add(new RuntimePermission("accessDeclaredMembers"));
+        permissions.add(new ReflectPermission("suppressAccessChecks"));
     }
 
     /**

@@ -1,6 +1,7 @@
 import com.eclipsesource.json.Json;
 import com.eclipsesource.json.JsonObject;
 import org.apache.commons.cli.*;
+import spark.Filter;
 
 import static spark.Spark.*;
 
@@ -86,6 +87,11 @@ public class WebServer {
                 }
                 return "";
             }
+        });
+
+        after((Filter) (request, response) -> {
+            response.header("Access-Control-Allow-Origin", "http://localhost:8125");
+            response.header("Access-Control-Allow-Methods", "POST");
         });
     }
 }
