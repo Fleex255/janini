@@ -124,7 +124,7 @@ public abstract class Source implements Callable<Void> {
     /**
      * Current tool version.
      */
-    protected static final String version = "0.3.1";
+    protected static final String version = "1.0.0";
 
     /**
      * Gson object for serialization and deserialization.

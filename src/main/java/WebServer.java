@@ -63,6 +63,7 @@ public class WebServer {
         Options options = new Options();
         options.addOption("p", "port", true, "Port to use. Default is 8888.");
         options.addOption("i", "interactive", false, "Enable interactive mode.");
+        options.addOption("l", "local", false, "Enable local development mode by disabling CORS.");
         options.addOption("v", "verbose", false, "Enable verbose mode.");
         CommandLineParser parser = new BasicParser();
         CommandLine settings = parser.parse(options, args);
@@ -89,9 +90,11 @@ public class WebServer {
             }
         });
 
-        after((Filter) (request, response) -> {
-            response.header("Access-Control-Allow-Origin", "http://localhost:8125");
-            response.header("Access-Control-Allow-Methods", "POST");
-        });
+        if (settings.hasOption("l")) {
+            after((Filter) (request, response) -> {
+                response.header("Access-Control-Allow-Origin", "*");
+                response.header("Access-Control-Allow-Methods", "POST,GET");
+            });
+        }
     }
 }
