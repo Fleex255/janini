@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -ex
+git pull
+version=`cat VERSION`
+echo "version: $version"
+./gradlew clean test jar
+git add -A
+git commit -m "version $version"
+git tag -a "$version" -m "version $version"
+git push
+git push --tags
+docker build --squash -t cs125/janini .
+docker tag cs125/janini:latest cs125/janini:$version
+docker push cs125/janini:latest
+docker push cs125/janini:$version
