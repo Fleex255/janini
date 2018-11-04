@@ -121,14 +121,7 @@ public class SimpleCompiler extends Source {
                     classLoader = compileWithJanino();
                     break;
                 } catch (CompileException ignored) { }
-                try {
-                    classLoader = compileWithJDK();
-                    break;
-                } catch (CompileException unused) {
-                    // Janino generates better error messages, so if the JDK fails try again
-                    // with Janino. Happily it's fast.
-                    classLoader = compileWithJanino();
-                }
+                classLoader = compileWithJDK();
                 break;
         }
         Class<?> klass = classLoader.loadClass(className);

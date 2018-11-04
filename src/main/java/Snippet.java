@@ -91,14 +91,10 @@ public class Snippet extends Source {
             default:
                 try {
                     compileWithJanino();
-                } catch (CompileException unused) { }
-                try {
-                    compileWithJDK();
-                } catch (CompileException unused) {
-                    // Janino generates better error messages, so if the JDK fails try again
-                    // with Janino. Happily it's fast.
-                    compileWithJanino();
-                }
+                    break;
+                } catch (CompileException ignored) { }
+                compileWithJDK();
+                break;
         }
     }
 
@@ -122,9 +118,8 @@ public class Snippet extends Source {
      *
      * @param setSource set the source of the Snippet object
      * @return this object for chaining
-     * @throws Exception if compilation fails
      */
-    public Source run(final String setSource) throws Exception {
+    public Source run(final String setSource) {
         source = setSource;
         return super.run();
     }
