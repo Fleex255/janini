@@ -15,12 +15,12 @@ public class Snippet extends Source {
     /**
      * Janino script evaluator.
      */
-    private org.codehaus.janino.ScriptEvaluator janinoScriptEvaluator;
+    private transient org.codehaus.janino.ScriptEvaluator janinoScriptEvaluator;
 
     /**
      * JDK script evaluator.
      */
-    private org.codehaus.commons.compiler.jdk.ScriptEvaluator jdkScriptEvaluator;
+    private transient org.codehaus.commons.compiler.jdk.ScriptEvaluator jdkScriptEvaluator;
 
     /**
      * Create a new Snippet and set default fields.
@@ -37,7 +37,6 @@ public class Snippet extends Source {
     Snippet(final String setCompiler) {
         super();
         compiler = setCompiler;
-        //scriptEvaluator.setPermissions(permissions);
     }
 
     /**

@@ -4,11 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.security.Permissions;
 import java.time.OffsetDateTime;
-import java.util.concurrent.Callable;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -223,14 +222,20 @@ public abstract class Source implements Callable<Void> {
     @Override
     public final Void call() throws Exception {
         try {
-            executionStarted = OffsetDateTime.now();
-            doExecute();
-            executed = true;
-        } catch (Exception e) {
+            try {
+                executionStarted = OffsetDateTime.now();
+                doExecute();
+                executed = true;
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
+            } catch (Exception e) {
+                throw e;
+            }
+        } catch (ThreadDeath e) {
+        } catch (Throwable e) {
             crashed = true;
             executionErrorMessage = e.toString();
             executionErrorStackTrace = stackTraceToString(e);
-            throw (e);
         }
         return null;
     }
@@ -250,6 +255,7 @@ public abstract class Source implements Callable<Void> {
             FutureTask<Void> futureTask = new FutureTask<>(this);
             Thread executionThread = new Thread(futureTask);
 
+
             ByteArrayOutputStream combinedOutputStream = new ByteArrayOutputStream();
             PrintStream combinedStream = new PrintStream(combinedOutputStream);
             PrintStream old = System.out;
@@ -261,15 +267,16 @@ public abstract class Source implements Callable<Void> {
                 executionThread.start();
                 futureTask.get(timeoutLength, TimeUnit.MILLISECONDS);
                 timedOut = false;
-            } catch (Throwable e) {
+            } catch (TimeoutException e) {
                 futureTask.cancel(true);
                 executionThread.stop();
                 timedOut = true;
-                executionErrorMessage = e.toString();
-                executionErrorStackTrace = stackTraceToString(e);
+            } catch (Throwable e) {
+                timedOut = false;
             } finally {
                 executionFinished = OffsetDateTime.now();
                 executionLength = diffTimestamps(executionStarted, executionFinished);
+
                 System.out.flush();
                 System.err.flush();
                 System.setOut(old);
@@ -308,5 +315,10 @@ public abstract class Source implements Callable<Void> {
     private static double diffTimestamps(final OffsetDateTime start, final OffsetDateTime end) {
         return (end.toInstant().toEpochMilli() - start.toInstant().toEpochMilli())
                 / MILLISECONDS_TO_SECONDS;
+    }
+
+    @Override
+    public final String toString() {
+        return gson.toJson(this);
     }
 }

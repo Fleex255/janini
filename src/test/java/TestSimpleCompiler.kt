@@ -22,6 +22,7 @@ public class Question {
 """)
         Assert.assertEquals(classes.output, "7")
         Assert.assertEquals(classes.compiler, "Janino")
+        Assert.assertTrue(classes.executed)
     }
 
     /**
@@ -39,6 +40,7 @@ public class Question {
         Assert.assertTrue(classes.compiled)
         Assert.assertEquals(classes.compiler, "Janino")
         Assert.assertFalse(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 
     @Test
@@ -53,6 +55,8 @@ public class Question {
 """)
         Assert.assertFalse(classes.executed)
         Assert.assertTrue(classes.crashed)
+        Assert.assertFalse(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 
     @Test
@@ -87,6 +91,7 @@ public class Blah {
 }
 """)
         Assert.assertFalse(classes.compiled)
+        Assert.assertFalse(classes.executed)
     }
 
     /**
@@ -104,6 +109,7 @@ public class Question {
 }
 """)
         Assert.assertFalse(classes.compiled)
+        Assert.assertFalse(classes.executed)
     }
 
     /**
@@ -120,6 +126,7 @@ public class Question {
 }
 """)
         Assert.assertFalse(classes.compiled)
+        Assert.assertFalse(classes.executed)
     }
 
     /**
@@ -142,6 +149,7 @@ public class Question {
 }
 """)
         Assert.assertFalse(classes.compiled)
+        Assert.assertFalse(classes.executed)
     }
 
     /**
@@ -164,6 +172,8 @@ public class Question {
 
         Assert.assertEquals(classes.output, "Geoffrey")
         Assert.assertEquals(classes.compiler, "JDK")
+        Assert.assertTrue(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 
     /**
@@ -186,6 +196,8 @@ public class Question {
 
         Assert.assertEquals(classes.output, "Geoffrey")
         Assert.assertEquals(classes.compiler, "JDK")
+        Assert.assertTrue(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 
     /**
@@ -204,6 +216,8 @@ public class Question {
 """)
         Assert.assertEquals(classes.output, "Worked")
         Assert.assertEquals(classes.compiler, "Janino")
+        Assert.assertTrue(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 
     /**
@@ -226,6 +240,8 @@ public class Question {
     """)
 
         Assert.assertEquals(classes.output, "Working")
+        Assert.assertTrue(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 
     /**
@@ -248,6 +264,8 @@ public class Question {
     """)
 
         Assert.assertEquals(classes.output, "Working")
+        Assert.assertTrue(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 
     /**
@@ -271,6 +289,8 @@ public class Question {
 """)
 
         Assert.assertEquals(classes.output, "Working")
+        Assert.assertTrue(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 
     /**
@@ -298,6 +318,8 @@ public class Question {
 """)
 
         Assert.assertEquals(classes.output, "Working")
+        Assert.assertTrue(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 
     /**
@@ -323,5 +345,7 @@ public class Question {
 }
 """)
         Assert.assertFalse(classes.compiled)
+        Assert.assertFalse(classes.executed)
+        Assert.assertFalse(classes.timedOut)
     }
 }

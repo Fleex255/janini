@@ -1,3 +1,5 @@
+import com.eclipsesource.json.Json
+import com.eclipsesource.json.JsonArray
 import org.testng.Assert
 import org.testng.annotations.Test
 import com.eclipsesource.json.JsonObject
@@ -8,7 +10,7 @@ import com.eclipsesource.json.JsonObject
 class TestWebServer {
 
     private fun isOK(testObject : JsonObject) {
-        Assert.assertTrue(testObject.get("completed").asBoolean())
+        Assert.assertTrue(testObject.get("executed").asBoolean())
     }
 
     /**
@@ -16,9 +18,9 @@ class TestWebServer {
      */
     @Test
     fun testCrashScript() {
-        val testObject = JsonObject()
-        testObject.add("source", "System.exit(-1);")
-        WebServer.run(testObject.toString())
+        val submission = JsonObject()
+        submission.add("source", "System.exit(-1);")
+        Assert.assertNotNull(Json.parse(WebServer.run(submission.toString())).asObject())
         // If this fails it shuts down the test runner
     }
 
@@ -27,9 +29,9 @@ class TestWebServer {
      */
     @Test
     fun testSimpleClass() {
-        val testObject = JsonObject()
-        testObject.add("as", "compiler")
-        testObject.add("class", "Question")
+        val submission = JsonObject()
+        submission.add("as", "SimpleCompiler")
+        submission.add("class", "Question")
         val source = """
 public class Question {
     public static void main(String[] unused) {
@@ -38,9 +40,9 @@ public class Question {
         System.out.println(a + b);
     }
 }""".trim()
-        testObject.add("source", source)
-        WebServer.run(testObject.toString())
-        Assert.assertEquals(Integer.parseInt(testObject.get("output").asString().trim()), 7)
+        submission.add("sources", JsonArray().add(source))
+        val result = Json.parse(WebServer.run(submission.toString())).asObject()
+        Assert.assertEquals(Integer.parseInt(result.get("output").asString().trim()), 7)
     }
 
     /**
@@ -48,17 +50,17 @@ public class Question {
      */
     @Test
     fun testCrashClass() {
-        val testObject = JsonObject()
-        testObject.add("as", "compiler")
-        testObject.add("class", "Question")
+        val submission = JsonObject()
+        submission.add("as", "SimpleCompiler")
+        submission.add("class", "Question")
         val source = """
 public class Question {
     public static void main(String[] unused) {
         System.exit(-1);
     }
 }""".trim()
-        testObject.add("source", source)
-        WebServer.run(testObject.toString())
+        submission.add("sources", JsonArray().add(source))
+        Assert.assertNotNull(Json.parse(WebServer.run(submission.toString())).asObject())
         // If this fails it shuts down the test runner
     }
 
@@ -67,9 +69,9 @@ public class Question {
      */
     @Test
     fun testTimeoutClass() {
-        val testObject = JsonObject()
-        testObject.add("as", "compiler")
-        testObject.add("class", "Question")
+        val submission = JsonObject()
+        submission.add("as", "SimpleCompiler")
+        submission.add("class", "Question")
         val source = """
 public class Question {
     public static void main(String[] unused) {
@@ -77,9 +79,9 @@ public class Question {
     }
 }
 """.trim()
-        testObject.add("source", source)
-        WebServer.run(testObject.toString())
-        Assert.assertTrue(testObject.get("timeout").asBoolean())
+        submission.add("sources", JsonArray().add(source))
+        val result = Json.parse(WebServer.run(submission.toString())).asObject()
+        Assert.assertTrue(result.get("timedOut").asBoolean())
     }
 
     /**
@@ -88,24 +90,25 @@ public class Question {
     @Test
     fun testParallelExecution() {
 
-        listOf(0, 1, 2, 3, 4, 6, 7, 8).parallelStream()
+        listOf(IntArray(32) { it + 1 }).parallelStream()
                 .forEach{ i ->
                     val source = """
 public class Question {
     public static void main(String[] unused) {
         for (int i = 0; i < 1024; i++) {
-            System.out.print("$i");
+            System.out.println("$i");
             for (int j = 0; j < 10000; j++) { }
         }
     }
 }"""
                     val testObject = JsonObject()
-                    testObject.add("as", "compiler")
+                    testObject.add("as", "SimpleCompiler")
                     testObject.add("class", "Question")
-                    testObject.add("source", source)
-                    WebServer.run(testObject.toString())
-                    isOK(testObject)
-                    Assert.assertEquals(testObject.get("output").asString().length, 1024)
+                    testObject.add("timeoutLength", 1000)
+                    testObject.add("sources", JsonArray().add(source))
+                    val result = Json.parse(WebServer.run(testObject.toString())).asObject()
+                    isOK(result)
+                    Assert.assertEquals(result.get("output").asString().trim().split("\n").size, 1024)
                 }
 
     }

@@ -16,6 +16,8 @@ int b = 4;
 System.out.print(a + b);
 """)
         Assert.assertEquals(snippet.output, "7")
+        Assert.assertTrue(snippet.executed)
+        Assert.assertFalse(snippet.timedOut)
     }
 
     @Test
@@ -25,6 +27,7 @@ System.exit(-1);
 """)
         Assert.assertFalse(snippet.executed)
         Assert.assertTrue(snippet.crashed)
+        Assert.assertFalse(snippet.timedOut)
     }
 
     @Test
@@ -35,6 +38,7 @@ System.out.println(reference.toString());
 """)
         Assert.assertFalse(snippet.executed)
         Assert.assertTrue(snippet.crashed)
+        Assert.assertFalse(snippet.timedOut)
     }
 
     @Test
@@ -47,6 +51,7 @@ while (true) {
 """)
         Assert.assertFalse(snippet.executed)
         Assert.assertTrue(snippet.timedOut)
+        Assert.assertFalse(snippet.crashed)
         Assert.assertTrue(snippet.timeoutLength / 1000.0 <= snippet.executionLength)
         Assert.assertTrue(snippet.executionLength <= (snippet.timeoutLength / 1000.0 * 1.2))
     }
@@ -62,6 +67,9 @@ t.value = 5;
 System.out.print(t.value);
 """)
         Assert.assertEquals(snippet.output, "5")
+        Assert.assertTrue(snippet.executed)
+        Assert.assertFalse(snippet.timedOut)
+        Assert.assertFalse(snippet.crashed)
     }
 
     @Test
@@ -74,6 +82,7 @@ list.add("Geoffrey");
 String broken = list.get(0);
 System.out.println(broken);
         """)
+        Assert.assertFalse(snippet.compiled)
         Assert.assertFalse(snippet.compiled)
     }
 
@@ -89,6 +98,9 @@ System.out.print(working);
         """)
         Assert.assertEquals(snippet.output, "Geoffrey")
         Assert.assertEquals(snippet.compiler, "JDK")
+        Assert.assertTrue(snippet.executed)
+        Assert.assertFalse(snippet.timedOut)
+        Assert.assertFalse(snippet.crashed)
     }
 
     @Test
@@ -103,6 +115,9 @@ System.out.print(working);
         """)
         Assert.assertEquals(snippet.output, "Geoffrey")
         Assert.assertEquals(snippet.compiler, "JDK")
+        Assert.assertTrue(snippet.executed)
+        Assert.assertFalse(snippet.timedOut)
+        Assert.assertFalse(snippet.crashed)
     }
 
     @Test
@@ -116,5 +131,8 @@ System.out.print(working);
         """)
         Assert.assertTrue(snippet.executed)
         Assert.assertEquals(snippet.output, "Geoffrey")
+        Assert.assertTrue(snippet.executed)
+        Assert.assertFalse(snippet.timedOut)
+        Assert.assertFalse(snippet.crashed)
     }
 }
