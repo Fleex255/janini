@@ -1,4 +1,5 @@
 import org.codehaus.commons.compiler.CompileException;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -10,45 +11,53 @@ import java.nio.charset.StandardCharsets;
  * Run a class method using Janino.
  */
 @SuppressWarnings("checkstyle:visibilitymodifier")
-public class JaninoClasses extends Source {
+public class SimpleCompiler extends Source {
 
-    /** Sources to compile. */
+    /**
+     * Sources to compile.
+     */
     public String[] sources;
 
-    /** Default class name to load. */
+    /**
+     * Default class name to load.
+     */
     public String className = "Question";
 
-    /** Default method name to run. */
+    /**
+     * Default method name to run.
+     */
     public String methodName = "main";
 
-    /** Method to run. */
+    /**
+     * Method to run.
+     */
     private transient Method method;
 
     /**
-     * Create a new JaninoClasses and set default fields.
+     * Create a new SimpleCompiler and set default fields.
      */
-    JaninoClasses() {
+    SimpleCompiler() {
         super();
     }
 
     /**
-     * Create a new JaninoClasses with a given compiler.
+     * Create a new SimpleCompiler with a given compiler.
      *
      * @param setCompiler the compiler to use
      */
-    JaninoClasses(final String setCompiler) {
+    SimpleCompiler(final String setCompiler) {
         super();
         compiler = setCompiler;
     }
 
     /**
-     * Create a new JaninoClasses execution object from a received JSON string.
+     * Create a new SimpleCompiler execution object from a received JSON string.
      *
-     * @param json JSON string to initialize the new JaninoClasses object
-     * @return new JaninoClasses object initialized from the JSON string
+     * @param json JSON string to initialize the new SimpleCompiler object
+     * @return new SimpleCompiler object initialized from the JSON string
      */
-    public static JaninoClasses received(final String json) {
-        return (JaninoClasses) received(json, JaninoClasses.class);
+    public static SimpleCompiler received(final String json) {
+        return (SimpleCompiler) received(json, SimpleCompiler.class);
     }
 
     /**
@@ -56,7 +65,7 @@ public class JaninoClasses extends Source {
      *
      * @return ClassLoader if compilation was successful
      * @throws CompileException thrown if compilation fails
-     * @throws IOException thrown if there was a problem converting the string to bytes
+     * @throws IOException      thrown if there was a problem converting the string to bytes
      */
     private ClassLoader compileWithJanino() throws CompileException, IOException {
         org.codehaus.janino.SimpleCompiler simpleCompiler =
@@ -66,6 +75,7 @@ public class JaninoClasses extends Source {
             simpleCompiler.cook(new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));
             simpleCompiler.setParentClassLoader(simpleCompiler.getClassLoader());
         }
+        compiler = "Janino";
         return simpleCompiler.getClassLoader();
     }
 
@@ -74,7 +84,7 @@ public class JaninoClasses extends Source {
      *
      * @return ClassLoader if compilation was successful
      * @throws CompileException thrown if compilation fails
-     * @throws IOException thrown if there was a problem converting the string to bytes
+     * @throws IOException      thrown if there was a problem converting the string to bytes
      */
     private ClassLoader compileWithJDK() throws CompileException, IOException {
         org.codehaus.commons.compiler.jdk.SimpleCompiler simpleCompiler =
@@ -83,18 +93,19 @@ public class JaninoClasses extends Source {
         for (String source : sources) {
             simpleCompiler.cook(new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)));
         }
+        compiler = "JDK";
         return simpleCompiler.getClassLoader();
     }
 
     /**
      * Compile Java classes using Janino.
-     *
+     * <p>
      * Throws an exception if compilation fails.
      *
-     * @throws CompileException if compilation fails
-     * @throws IOException if there is a problem creating the input stream
+     * @throws CompileException       if compilation fails
+     * @throws IOException            if there is a problem creating the input stream
      * @throws ClassNotFoundException if the class specified is not found
-     * @throws NoSuchMethodException if the method specified is not found or is not static
+     * @throws NoSuchMethodException  if the method specified is not found or is not static
      */
     public void doCompile() throws CompileException, IOException, ClassNotFoundException, NoSuchMethodException {
         ClassLoader classLoader;
@@ -107,10 +118,8 @@ public class JaninoClasses extends Source {
                 break;
             default:
                 try {
-                    compiler = "Janino";
                     classLoader = compileWithJanino();
-                } catch (Exception janinoException) {
-                    compiler = "JDK";
+                } catch (CompileException unused) {
                     classLoader = compileWithJDK();
                 }
                 break;
@@ -124,20 +133,20 @@ public class JaninoClasses extends Source {
 
     /**
      * Execute our Java classes code.
-     *
+     * <p>
      * Throws an exception if execution fails.
      *
      * @throws InvocationTargetException if the target cannot be invoked
-     * @throws IllegalAccessException if the code attempts to violate the sandbox
+     * @throws IllegalAccessException    if the code attempts to violate the sandbox
      */
     public void doExecute() throws InvocationTargetException, IllegalAccessException {
-        method.invoke(null, (Object) new String[] {});
+        method.invoke(null, (Object) new String[]{});
     }
 
     /**
      * Convenience method for testing.
      *
-     * @param setSource set the source of the JaninoClasses object
+     * @param setSource set the source of the SimpleCompiler object
      * @return this object for chaining
      * @throws Exception if compilation fails
      */

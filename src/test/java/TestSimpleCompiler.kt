@@ -5,13 +5,13 @@ import org.testng.annotations.Test
 /**
  * Test the WebServer class.
  */
-class TestJaninoClasses {
+class TestSimpleCompiler {
     /**
      * Test simple math.
      */
     @Test
     fun testMath() {
-        val classes = JaninoClasses().run("""
+        val classes = SimpleCompiler().run("""
 public class Question {
     public static void main(final String[] unused) {
         int a = 3;
@@ -29,7 +29,7 @@ public class Question {
      */
     @Test
     fun testExit() {
-        val classes = JaninoClasses().run("""
+        val classes = SimpleCompiler().run("""
 public class Question {
     public static void main(final String[] unused) {
         System.exit(-1);
@@ -41,12 +41,44 @@ public class Question {
         Assert.assertFalse(classes.executed)
     }
 
+    @Test
+    fun testNullDeference() {
+        val classes = SimpleCompiler().run("""
+public class Question {
+    public static void main(final String[] unused) {
+        Object reference = null;
+        System.out.println(reference.toString());
+    }
+}
+""")
+        Assert.assertFalse(classes.executed)
+        Assert.assertTrue(classes.crashed)
+    }
+
+    @Test
+    fun testTimeout() {
+        val classes = SimpleCompiler().run("""
+public class Question {
+    public static void main(String[] unused) {
+        int i = 0;
+        while (true) {
+            i++;
+        }
+    }
+}
+""")
+        Assert.assertFalse(classes.executed)
+        Assert.assertTrue(classes.timedOut)
+        Assert.assertTrue(classes.timeoutLength / 1000.0 <= classes.executionLength)
+        Assert.assertTrue(classes.executionLength <= (classes.timeoutLength / 1000.0 * 1.2))
+    }
+
     /**
      * Test wrong class name.
      */
     @Test
     fun testWrongClassName() {
-        val classes = JaninoClasses()
+        val classes = SimpleCompiler()
         try {
             classes.run("""
 public class Blah {
@@ -65,7 +97,7 @@ public class Blah {
      */
     @Test
     fun testWrongMethodName() {
-        val classes = JaninoClasses()
+        val classes = SimpleCompiler()
         try {
             classes.run("""
 public class Question {
@@ -84,7 +116,7 @@ public class Question {
      */
     @Test
     fun testWrongMethodSignature() {
-        val classes = JaninoClasses()
+        val classes = SimpleCompiler()
         try {
             classes.run("""
 public class Question {
@@ -103,7 +135,7 @@ public class Question {
      */
     @Test
     fun testGenericsAreBrokenUsingJanino() {
-        val classes = JaninoClasses("Janino")
+        val classes = SimpleCompiler("Janino")
         try {
             classes.run("""
 import java.util.ArrayList;
@@ -127,7 +159,7 @@ public class Question {
      */
     @Test
     fun testGenericsWorkUsingJDK() {
-        val classes = JaninoClasses("JDK").run("""
+        val classes = SimpleCompiler("JDK").run("""
 import java.util.ArrayList;
 
 public class Question {
@@ -149,7 +181,7 @@ public class Question {
      */
     @Test
     fun testGenericsTriggerTheJDK() {
-        val classes = JaninoClasses().run("""
+        val classes = SimpleCompiler().run("""
 import java.util.ArrayList;
 
 public class Question {
@@ -171,7 +203,7 @@ public class Question {
      */
     @Test
     fun testImports() {
-        val classes = JaninoClasses().run("""
+        val classes = SimpleCompiler().run("""
 import java.util.ArrayList;
 
 public class Question {
@@ -189,7 +221,7 @@ public class Question {
      */
     @Test
     fun testMultipleClassesInSingleSource() {
-        val classes = JaninoClasses().run("""
+        val classes = SimpleCompiler().run("""
     public class Other {
         public String toString() {
             return "Working";
@@ -211,7 +243,7 @@ public class Question {
      */
     @Test
     fun testMultipleClassesInSingleSourceInWrongOrder() {
-        val classes = JaninoClasses().run("""
+        val classes = SimpleCompiler().run("""
     public class Question {
         public static void main(final String[] unused) {
             Other other = new Other();
@@ -233,7 +265,7 @@ public class Question {
      */
     @Test
     fun testMultipleClassesInMultipleSources() {
-        val classes = JaninoClasses("Janino").run("""
+        val classes = SimpleCompiler("Janino").run("""
 public class Other {
     public String toString() {
         return "Working";
@@ -256,7 +288,7 @@ public class Question {
      */
     @Test
     fun testMultipleClassesInMultipleSourcesWitImports() {
-        val classes = JaninoClasses("Janino").run("""
+        val classes = SimpleCompiler("Janino").run("""
 import java.util.HashMap;
 public class Other {
     public String toString() {
@@ -285,7 +317,7 @@ public class Question {
      */
     @Test
     fun testMultipleClassesInMultipleSourcesInWrongOrder() {
-        val classes = JaninoClasses("Janino")
+        val classes = SimpleCompiler("Janino")
         try {
             classes.run("""
 public class Question {

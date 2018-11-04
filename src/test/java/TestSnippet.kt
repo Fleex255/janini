@@ -5,13 +5,13 @@ import org.testng.annotations.Test
 /**
  * Test the WebServer class.
  */
-class TestJaninoSnippet {
+class TestSnippet {
     /**
      * Test simple script.
      */
     @Test
     fun testMath() {
-        val snippet = JaninoSnippet().run("""
+        val snippet = Snippet().run("""
 int a = 3;
 int b = 4;
 System.out.print(a + b);
@@ -21,7 +21,7 @@ System.out.print(a + b);
 
     @Test
     fun testExit() {
-        val snippet = JaninoSnippet().run("""
+        val snippet = Snippet().run("""
 System.exit(-1);
 """)
         Assert.assertFalse(snippet.executed)
@@ -30,7 +30,7 @@ System.exit(-1);
 
     @Test
     fun testNullDeference() {
-        val snippet = JaninoSnippet().run("""
+        val snippet = Snippet().run("""
 Object reference = null;
 System.out.println(reference.toString());
 """)
@@ -40,7 +40,7 @@ System.out.println(reference.toString());
 
     @Test
     fun testTimeout() {
-        val snippet = JaninoSnippet().run("""
+        val snippet = Snippet().run("""
 int i = 0;
 while (true) {
     i++;
@@ -54,7 +54,7 @@ while (true) {
 
     @Test
     fun testPrivateVisibility() {
-        val snippet = JaninoSnippet().run("""
+        val snippet = Snippet().run("""
 class Test {
   private int value;
 }
@@ -66,8 +66,8 @@ System.out.print(t.value);
     }
 
     @Test
-    fun testGenericsAreBroken() {
-        val snippet = JaninoSnippet()
+    fun testGenericsAreBrokenUsingJanino() {
+        val snippet = Snippet("Janino")
         try {
             snippet.run("""
 import java.util.ArrayList;
@@ -82,8 +82,42 @@ System.out.println(broken);
     }
 
     @Test
+    fun testGenericsWorkUsingJDK() {
+        val snippet = Snippet("JDK")
+        try {
+            snippet.run("""
+import java.util.ArrayList;
+ArrayList<String> list = new ArrayList<String>();
+list.add("Geoffrey");
+String working = list.get(0);
+System.out.print(working);
+        """)
+        } catch (e: CompileException) { }
+
+        Assert.assertEquals(snippet.output, "Geoffrey");
+        Assert.assertEquals(snippet.compiler, "JDK")
+    }
+
+    @Test
+    fun testGenericsTriggerTheJDK() {
+        val snippet = Snippet()
+        try {
+            snippet.run("""
+import java.util.ArrayList;
+ArrayList<String> list = new ArrayList<String>();
+list.add("Geoffrey");
+String working = list.get(0);
+System.out.print(working);
+        """)
+        } catch (e: CompileException) { }
+
+        Assert.assertEquals(snippet.output, "Geoffrey");
+        Assert.assertEquals(snippet.compiler, "JDK")
+    }
+
+    @Test
     fun testGenericsWorkWithCasts() {
-        val snippet = JaninoSnippet().run("""
+        val snippet = Snippet().run("""
 import java.util.ArrayList;
 ArrayList<String> list = new ArrayList<String>();
 list.add("Geoffrey");
