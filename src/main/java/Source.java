@@ -145,9 +145,13 @@ public abstract class Source implements Callable<Void> {
      * Create a new Source object.
      */
     Source() {
+        // Required for out-of-order classes
         permissions.add(new RuntimePermission("getProtectionDomain"));
+        // Required for streams
         permissions.add(new RuntimePermission("accessDeclaredMembers"));
         permissions.add(new ReflectPermission("suppressAccessChecks"));
+        // Required for generics
+        permissions.add(new RuntimePermission("getClassLoader"));
     }
 
     /**

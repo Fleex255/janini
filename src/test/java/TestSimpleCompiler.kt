@@ -238,7 +238,6 @@ public class Question {
         }
     }
     """)
-
         Assert.assertEquals(classes.output, "Working")
         Assert.assertTrue(classes.executed)
         Assert.assertFalse(classes.timedOut)
@@ -346,6 +345,57 @@ public class Question {
 """)
         Assert.assertFalse(classes.compiled)
         Assert.assertFalse(classes.executed)
+        Assert.assertFalse(classes.timedOut)
+    }
+
+    /**
+     * Test stream operators. These require new permissions.
+     */
+    @Test
+    fun testStreams() {
+        val classes = SimpleCompiler("JDK")
+        classes.run("""
+import java.util.Arrays;
+
+public class Question {
+    public static void main(final String[] unused) {
+        Arrays.asList("a1", "a2", "b1", "c2", "c1")
+            .stream()
+            .filter(s -> s.startsWith("c"))
+            .map(String::toUpperCase)
+            .sorted()
+            .forEach(System.out::print);
+    }
+}
+""")
+        Assert.assertEquals(classes.output, "C1C2")
+        Assert.assertTrue(classes.executed)
+        Assert.assertFalse(classes.timedOut)
+    }
+
+    /**
+     * Test generic methods. These require new permissions.
+     */
+    @Test
+    fun testGenericMethod() {
+        val classes = SimpleCompiler("JDK")
+        classes.run("""
+public class A implements Comparable<A> {
+  public int compareTo(A other) {
+    return 0;
+  }
+}
+public class Question {
+  public static <T extends Comparable<T>> int test(T[] values) {
+    return 8;
+  }
+  public static void main(String[] unused) {
+    System.out.print(test(new A[] { }));
+  }
+}
+""")
+        Assert.assertEquals(classes.output, "8")
+        Assert.assertTrue(classes.executed)
         Assert.assertFalse(classes.timedOut)
     }
 }
