@@ -1,4 +1,12 @@
 import com.google.gson.Gson;
+import com.puppycrawl.tools.checkstyle.ConfigurationLoader;
+import com.puppycrawl.tools.checkstyle.PackageObjectFactory;
+import com.puppycrawl.tools.checkstyle.PropertiesExpander;
+import com.puppycrawl.tools.checkstyle.ThreadModeSettings;
+import com.puppycrawl.tools.checkstyle.api.CheckstyleException;
+import com.puppycrawl.tools.checkstyle.api.Configuration;
+import com.puppycrawl.tools.checkstyle.api.LocalizedMessage;
+import org.apache.commons.cli.CommandLine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -8,6 +16,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ReflectPermission;
 import java.security.Permissions;
 import java.time.OffsetDateTime;
+import java.util.Map;
+import java.util.SortedSet;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -16,6 +26,11 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @SuppressWarnings({"checkstyle:visibilitymodifier", "checkstyle:constantname"})
 public abstract class Source implements Callable<Void> {
+    /**
+     * Whether to run checkstyle.
+     */
+    public boolean runCheckstyle = true;
+
     /**
      * Compiler used.
      */
@@ -35,6 +50,26 @@ public abstract class Source implements Callable<Void> {
      * Time that the result was returned to the client.
      */
     protected OffsetDateTime returned;
+
+    /**
+     * Time checkstyle started.
+     */
+    protected OffsetDateTime checkstyleStarted;
+
+    /**
+     * Time checkstyle finished.
+     */
+    protected OffsetDateTime checkstyleFinished;
+
+    /**
+     * Time checkstyle took in seconds.
+     */
+    protected double checkstyleLength;
+
+    /**
+     * Whether checkstyle succeeded.
+     */
+    protected boolean checked = false;
 
     /**
      * Time compilation started.
@@ -142,6 +177,42 @@ public abstract class Source implements Callable<Void> {
     private static final transient ReentrantLock OUTPUT_LOCK = new ReentrantLock();
 
     /**
+     * Default checkstyle configuration.
+     */
+    private static transient Configuration defaultCheckstyleConfiguration = null;
+
+    /**
+     * checkstyle root module.
+     */
+    private static transient StringChecker checker = null;
+
+    /**
+     * Initialize based on command line options.
+     *
+     * @param settings options passed on the command line
+     * @throws CheckstyleException thrown if the checkstyle configuration is invalid
+     */
+    public static void initialize(final CommandLine settings) throws CheckstyleException {
+        String checkstyleConfigurationPath = "./defaults/checkstyle.xml";
+        if (settings != null && settings.hasOption("c")) {
+            checkstyleConfigurationPath = settings.getOptionValue("c");
+        }
+
+        defaultCheckstyleConfiguration = ConfigurationLoader.loadConfiguration(
+                checkstyleConfigurationPath,
+                new PropertiesExpander(System.getProperties()),
+                ConfigurationLoader.IgnoredModulesOptions.OMIT,
+                new ThreadModeSettings(1, 1)
+        );
+
+        final ClassLoader moduleClassLoader = StringChecker.class.getClassLoader();
+        checker = (StringChecker) new PackageObjectFactory(
+                StringChecker.class.getPackage().getName(), moduleClassLoader
+        ).createModule(defaultCheckstyleConfiguration.getName());
+        checker.setModuleClassLoader(moduleClassLoader);
+    }
+
+    /**
      * Create a new Source object.
      */
     Source() {
@@ -153,6 +224,13 @@ public abstract class Source implements Callable<Void> {
         // Required for generics
         permissions.add(new RuntimePermission("getClassLoader"));
     }
+
+    /**
+     * Implemented by each executor to return a map of filename to contents for their sources.
+     *
+     * @return a map of source filename to contents
+     */
+    protected abstract Map<String, String> sources();
 
     /**
      * Create a new source object from a received JSON string.
@@ -188,6 +266,34 @@ public abstract class Source implements Callable<Void> {
         PrintWriter printWriter = new PrintWriter(stringWriter);
         e.printStackTrace(printWriter);
         return stringWriter.toString();
+    }
+
+    /**
+     * Run checkstyle on sources.
+     *
+     * @return this object for chaining
+     */
+    public final Source checkstyle() {
+        if (!runCheckstyle) {
+            return this;
+        }
+        try {
+            checkstyleStarted = OffsetDateTime.now();
+            checker.configure(defaultCheckstyleConfiguration);
+            for (Map.Entry<String, String> source : sources().entrySet()) {
+                SortedSet<LocalizedMessage> sourceMessages = checker.processString(source.getValue(), source.getKey());
+                for (LocalizedMessage message : sourceMessages) {
+                    System.out.println(message.getMessage());
+                }
+            }
+            checked = true;
+        } catch (CheckstyleException e) {
+            checked = false;
+        } finally {
+            checkstyleFinished = OffsetDateTime.now();
+            checkstyleLength = diffTimestamps(checkstyleStarted, checkstyleFinished);
+        }
+        return this;
     }
 
     /**
@@ -227,7 +333,7 @@ public abstract class Source implements Callable<Void> {
     protected abstract void doExecute() throws Exception;
 
     @Override
-    public final Void call() throws Exception {
+    public final Void call() {
         try {
             try {
                 executionStarted = OffsetDateTime.now();
@@ -235,10 +341,8 @@ public abstract class Source implements Callable<Void> {
                 executed = true;
             } catch (InvocationTargetException e) {
                 throw e.getCause();
-            } catch (Exception e) {
-                throw e;
             }
-        } catch (ThreadDeath e) {
+        } catch (ThreadDeath ignored) {
         } catch (Throwable e) {
             crashed = true;
             executionErrorMessage = e.toString();
@@ -304,7 +408,7 @@ public abstract class Source implements Callable<Void> {
      * @return this object for chaining
      */
     public Source run() {
-        return this.compile().execute();
+        return this.checkstyle().compile().execute();
     }
 
     /**

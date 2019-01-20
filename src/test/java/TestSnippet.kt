@@ -1,10 +1,16 @@
 import org.testng.Assert
+import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 
 /**
  * Test the WebServer class.
  */
 class TestSnippet {
+    @BeforeClass
+    fun initialize() {
+        Source.initialize(null);
+    }
+
     /**
      * Test simple script.
      */

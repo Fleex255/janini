@@ -28,7 +28,8 @@ dependencies {
     compile 'org.slf4j:slf4j-simple:1.7.25'
     compile 'commons-cli:commons-cli:20040117.000000'
     compile 'com.google.code.gson:gson:2.8.5'
-    compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    compile 'com.puppycrawl.tools:checkstyle:8.16'
     shadow 'com.sparkjava:spark-core:2.8.0'
     shadow 'org.codehaus.janino:janino:3.0.11'
     shadow 'org.codehaus.janino:commons-compiler-jdk:3.0.11'
@@ -36,6 +37,7 @@ dependencies {
     shadow 'org.slf4j:slf4j-simple:1.7.25'
     shadow 'commons-cli:commons-cli:20040117.000000'
     shadow 'com.google.code.gson:gson:2.8.5'
+    shadow 'com.puppycrawl.tools:checkstyle:8.16'
     testCompile 'org.testng:testng:6.9.6'
 }
 checkstyle {

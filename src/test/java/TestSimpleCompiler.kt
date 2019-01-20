@@ -1,11 +1,17 @@
 import org.codehaus.commons.compiler.CompileException
 import org.testng.Assert
+import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 
 /**
  * Test the WebServer class.
  */
 class TestSimpleCompiler {
+    @BeforeClass
+    fun initialize() {
+        Source.initialize(null);
+    }
+
     /**
      * Test simple math.
      */

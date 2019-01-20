@@ -6,6 +6,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Run a class method using Janino.
@@ -48,6 +50,15 @@ public class SimpleCompiler extends Source {
     SimpleCompiler(final String setCompiler) {
         super();
         compiler = setCompiler;
+    }
+
+    /**
+     * Get a map of sources for this snippet. FIXME.
+     *
+     * @return a map of sources for this snippet.
+     */
+    protected Map<String, String> sources() {
+        return new HashMap<>();
     }
 
     /**

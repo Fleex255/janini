@@ -65,6 +65,8 @@ public class WebServer {
         options.addOption("i", "interactive", false, "Enable interactive mode.");
         options.addOption("l", "local", false, "Enable local development mode by disabling CORS.");
         options.addOption("v", "verbose", false, "Enable verbose mode.");
+        options.addOption("c", "checkstyle", true,
+                "Path to checkstyle configuration file. Defaults to ./defaults/checkstyle.xml");
         CommandLineParser parser = new BasicParser();
         CommandLine settings = parser.parse(options, args);
 
@@ -76,6 +78,13 @@ public class WebServer {
 
         if (settings.hasOption("i")) {
             staticFiles.location("/webroot");
+        }
+
+        try {
+            Source.initialize(settings);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
         }
 
         post("/run", (request, response) -> {

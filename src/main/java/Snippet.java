@@ -1,11 +1,18 @@
 import org.codehaus.commons.compiler.CompileException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Run a snippet of code using Janino.
  */
 @SuppressWarnings("checkstyle:visibilitymodifier")
 public class Snippet extends Source {
+
+    /**
+     * Fake filename of snippet.
+     */
+    public String filename = "Snippet.java";
 
     /**
      * Source code to compile.
@@ -37,6 +44,17 @@ public class Snippet extends Source {
     Snippet(final String setCompiler) {
         super();
         compiler = setCompiler;
+    }
+
+    /**
+     * Get a map of sources for this snippet.
+     *
+     * @return a map of sources for this snippet.
+     */
+    protected Map<String, String> sources() {
+        Map<String, String> snippetSources = new HashMap<>();
+        snippetSources.put(filename, source);
+        return snippetSources;
     }
 
     /**
