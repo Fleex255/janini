@@ -3,11 +3,16 @@ import com.eclipsesource.json.JsonArray
 import org.testng.Assert
 import org.testng.annotations.Test
 import com.eclipsesource.json.JsonObject
+import org.testng.annotations.BeforeClass
 
 /**
  * Test the WebServer class.
  */
 class TestWebServer {
+    @BeforeClass
+    fun initialize() {
+        Source.initialize(null);
+    }
 
     private fun isOK(testObject : JsonObject) {
         Assert.assertTrue(testObject.get("executed").asBoolean())

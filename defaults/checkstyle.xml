@@ -147,7 +147,9 @@
 
     <!-- Checks for blocks. You know, those {}'s         -->
     <!-- See http://checkstyle.sf.net/config_blocks.html -->
+    <!-- Janini: we need nested blocks for inline functions
     <module name="AvoidNestedBlocks"/>
+    -->
     <module name="EmptyBlock"/>
     <module name="LeftCurly"/>
     <!-- Quiz-Starter: allow empty for loops for list problems. -->

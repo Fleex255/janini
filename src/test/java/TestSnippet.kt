@@ -23,6 +23,7 @@ System.out.print(a + b);
 """)
         Assert.assertEquals(snippet.output, "7")
         Assert.assertTrue(snippet.executed)
+        Assert.assertTrue(snippet.checkstyleSucceeded)
         Assert.assertFalse(snippet.timedOut)
     }
 
@@ -66,11 +67,25 @@ while (true) {
     fun testPrivateVisibility() {
         val snippet = Snippet().run("""
 class Test {
-  private int value;
+    private int value;
 }
 Test t = new Test();
 t.value = 5;
 System.out.print(t.value);
+""")
+        Assert.assertEquals(snippet.output, "5")
+        Assert.assertTrue(snippet.executed)
+        Assert.assertFalse(snippet.timedOut)
+        Assert.assertFalse(snippet.crashed)
+    }
+
+    @Test
+    fun testPrivateFunction() {
+        val snippet = Snippet().run("""
+static int test() {
+    return 5;
+}
+System.out.print(test());
 """)
         Assert.assertEquals(snippet.output, "5")
         Assert.assertTrue(snippet.executed)
@@ -140,5 +155,44 @@ System.out.print(working);
         Assert.assertTrue(snippet.executed)
         Assert.assertFalse(snippet.timedOut)
         Assert.assertFalse(snippet.crashed)
+    }
+
+    @Test
+    fun testCheckstyleIndentation() {
+        val snippet = Snippet().run("""
+import java.util.ArrayList;
+static void test() {
+  int me = 5;
+}
+test();
+        """)
+        Assert.assertFalse(snippet.checkstyleSucceeded)
+        Assert.assertFalse(snippet.compiled)
+        Assert.assertFalse(snippet.executed)
+    }
+
+    @Test
+    fun testCheckstyleBraces() {
+        val snippet = Snippet().run("""
+import java.util.ArrayList;
+if (0 < 1)
+{
+    System.out.println("Big");
+}""")
+        Assert.assertFalse(snippet.checkstyleSucceeded)
+        Assert.assertFalse(snippet.compiled)
+        Assert.assertFalse(snippet.executed)
+    }
+
+    @Test
+    fun testCheckstyleWhitespace() {
+        val snippet = Snippet().run("""
+import java.util.ArrayList;
+for(int=0;i<10;i++){
+    System.out.println("Big");
+}""")
+        Assert.assertFalse(snippet.checkstyleSucceeded)
+        Assert.assertFalse(snippet.compiled)
+        Assert.assertFalse(snippet.executed)
     }
 }

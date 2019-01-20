@@ -32,6 +32,11 @@ public abstract class Source implements Callable<Void> {
     public boolean runCheckstyle = true;
 
     /**
+     * Whether to require checkstyle pass before compiling.
+     */
+    public boolean requireCheckstyle = true;
+
+    /**
      * Compiler used.
      */
     protected String compiler = "";
@@ -69,7 +74,7 @@ public abstract class Source implements Callable<Void> {
     /**
      * Whether checkstyle succeeded.
      */
-    protected boolean checked = false;
+    protected boolean checkstyleSucceeded = false;
 
     /**
      * Time compilation started.
@@ -277,18 +282,17 @@ public abstract class Source implements Callable<Void> {
         if (!runCheckstyle) {
             return this;
         }
+        int messageCount = 0;
         try {
             checkstyleStarted = OffsetDateTime.now();
             checker.configure(defaultCheckstyleConfiguration);
             for (Map.Entry<String, String> source : sources().entrySet()) {
                 SortedSet<LocalizedMessage> sourceMessages = checker.processString(source.getValue(), source.getKey());
-                for (LocalizedMessage message : sourceMessages) {
-                    System.out.println(message.getMessage());
-                }
+                messageCount += sourceMessages.size();
             }
-            checked = true;
+            checkstyleSucceeded = messageCount == 0;
         } catch (CheckstyleException e) {
-            checked = false;
+            checkstyleSucceeded = false;
         } finally {
             checkstyleFinished = OffsetDateTime.now();
             checkstyleLength = diffTimestamps(checkstyleStarted, checkstyleFinished);
@@ -311,6 +315,9 @@ public abstract class Source implements Callable<Void> {
      * @return this object for chaining
      */
     public final Source compile() {
+        if (runCheckstyle && requireCheckstyle && !checkstyleSucceeded) {
+            return this;
+        }
         try {
             compileStarted = OffsetDateTime.now();
             doCompile();
