@@ -76,7 +76,8 @@ public class Question {
     fun testTimeoutClass() {
         val submission = JsonObject()
         submission.add("as", "SimpleCompiler")
-        submission.add("class", "Question")
+        submission.add("className", "Question")
+        submission.add("runCheckstyle", "false")
         val source = """
 public class Question {
     public static void main(String[] unused) {
@@ -108,7 +109,8 @@ public class Question {
 }"""
                     val testObject = JsonObject()
                     testObject.add("as", "SimpleCompiler")
-                    testObject.add("class", "Question")
+                    testObject.add("className", "Question")
+                    testObject.add("runCheckstyle", "false")
                     testObject.add("timeoutLength", 1000)
                     testObject.add("sources", JsonArray().add(source))
                     val result = Json.parse(WebServer.run(testObject.toString())).asObject()
