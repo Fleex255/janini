@@ -8,18 +8,18 @@ import com.puppycrawl.tools.checkstyle.api.Configuration;
 import com.puppycrawl.tools.checkstyle.api.LocalizedMessage;
 import org.apache.commons.cli.CommandLine;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ReflectPermission;
 import java.security.Permissions;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 /**
  * Base class for all execution strategies.
@@ -167,6 +167,16 @@ public abstract class Source implements Callable<Void> {
     protected static final String version = "1.0.0";
 
     /**
+     * Default indentation level.
+     */
+    public static final transient int DEFAULT_INDENTATION_LEVEL = 4;
+
+    /**
+     * Amount to indent for checkstyle or when templating code.
+     */
+    public int indentLevel = DEFAULT_INDENTATION_LEVEL;
+
+    /**
      * Gson object for serialization and deserialization.
      */
     private static transient Gson gson = new Gson();
@@ -189,7 +199,7 @@ public abstract class Source implements Callable<Void> {
     /**
      * checkstyle root module.
      */
-    private static transient StringChecker checker = null;
+    private transient StringChecker checker = null;
 
     /**
      * Initialize based on command line options.
@@ -209,16 +219,11 @@ public abstract class Source implements Callable<Void> {
                 ConfigurationLoader.IgnoredModulesOptions.OMIT,
                 new ThreadModeSettings(1, 1)
         );
-
-        final ClassLoader moduleClassLoader = StringChecker.class.getClassLoader();
-        checker = (StringChecker) new PackageObjectFactory(
-                StringChecker.class.getPackage().getName(), moduleClassLoader
-        ).createModule(defaultCheckstyleConfiguration.getName());
-        checker.setModuleClassLoader(moduleClassLoader);
     }
 
     /**
      * Create a new Source object.
+     * @throws CheckstyleException if checker creation fails.
      */
     Source() {
         // Required for out-of-order classes
@@ -228,6 +233,17 @@ public abstract class Source implements Callable<Void> {
         permissions.add(new ReflectPermission("suppressAccessChecks"));
         // Required for generics
         permissions.add(new RuntimePermission("getClassLoader"));
+
+        // Set up the checkstyle checker
+        try {
+            final ClassLoader moduleClassLoader = StringChecker.class.getClassLoader();
+            checker = (StringChecker) new PackageObjectFactory(
+                    StringChecker.class.getPackage().getName(), moduleClassLoader
+            ).createModule(defaultCheckstyleConfiguration.getName());
+            checker.setModuleClassLoader(moduleClassLoader);
+        } catch (CheckstyleException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -274,6 +290,48 @@ public abstract class Source implements Callable<Void> {
     }
 
     /**
+     * Hackily change the indentation level of the checkstyle configuration.
+     * @param configuration the checkstyle configuration object to modify.
+     * @return a copy of the configuration with the current indentation setting.
+     */
+    private Configuration reconfigureIndentLevel(final Configuration configuration) {
+        // Duplicate the configuration
+        ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+        Configuration confCopy;
+        try {
+            ObjectOutputStream serializer = new ObjectOutputStream(byteOutput);
+            serializer.writeObject(configuration);
+            serializer.flush();
+            ByteArrayInputStream byteInput = new ByteArrayInputStream(byteOutput.toByteArray());
+            ObjectInputStream deserializer = new ObjectInputStream(byteInput);
+            confCopy = (Configuration) deserializer.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+        // Change the copy's indentation level
+        Configuration treeWalker = Stream.of(confCopy.getChildren())
+                .filter(f -> f.getName().equals("TreeWalker")).findAny().orElse(null);
+        if (treeWalker == null) {
+            return configuration;
+        }
+        Configuration indentation = Stream.of(treeWalker.getChildren())
+                .filter(f -> f.getName().equals("Indentation")).findAny().orElse(null);
+        if (indentation == null) {
+            return configuration;
+        }
+        try {
+            Field attributesField = indentation.getClass().getDeclaredField("attributeMap");
+            attributesField.setAccessible(true);
+            HashMap<String, String> attributesMap = (HashMap<String, String>) attributesField.get(indentation);
+            attributesMap.put("basicOffset", String.valueOf(indentLevel));
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+        return confCopy;
+    }
+
+    /**
      * Run checkstyle on sources.
      *
      * @return this object for chaining
@@ -285,7 +343,7 @@ public abstract class Source implements Callable<Void> {
         int messageCount = 0;
         try {
             checkstyleStarted = OffsetDateTime.now();
-            checker.configure(defaultCheckstyleConfiguration);
+            checker.configure(reconfigureIndentLevel(defaultCheckstyleConfiguration));
             for (Map.Entry<String, String> source : sources().entrySet()) {
                 SortedSet<LocalizedMessage> sourceMessages = checker.processString(source.getValue(), source.getKey());
                 messageCount += sourceMessages.size();

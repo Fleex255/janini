@@ -216,6 +216,7 @@ import java.util.ArrayList;
 
 public class Question {
     public static void main(final String[] unused) {
+        ArrayList list = new ArrayList();
         System.out.print("Worked");
     }
 }
@@ -232,18 +233,18 @@ public class Question {
     @Test
     fun testMultipleClassesInSingleSource() {
         val classes = SimpleCompiler().run("""
-    public class Other {
-        public String toString() {
-            return "Working";
-        }
+public class Other {
+    public String toString() {
+        return "Working";
     }
-    public class Question {
-        public static void main(final String[] unused) {
-            Other other = new Other();
-            System.out.print(other.toString());
-        }
+}
+public class Question {
+    public static void main(final String[] unused) {
+        Other other = new Other();
+        System.out.print(other.toString());
     }
-    """)
+}
+""")
         Assert.assertEquals(classes.output, "Working")
         Assert.assertTrue(classes.executed)
         Assert.assertFalse(classes.timedOut)
@@ -255,18 +256,18 @@ public class Question {
     @Test
     fun testMultipleClassesInSingleSourceInWrongOrder() {
         val classes = SimpleCompiler().run("""
-    public class Question {
-        public static void main(final String[] unused) {
-            Other other = new Other();
-            System.out.print(other.toString());
-        }
+public class Question {
+    public static void main(final String[] unused) {
+        Other other = new Other();
+        System.out.print(other.toString());
     }
-    public class Other {
-        public String toString() {
-            return "Working";
-        }
+}
+public class Other {
+    public String toString() {
+        return "Working";
     }
-    """)
+}
+""")
 
         Assert.assertEquals(classes.output, "Working")
         Assert.assertTrue(classes.executed)
@@ -412,6 +413,7 @@ public class Question {
     @Test
     fun testGenericMethod() {
         val classes = SimpleCompiler("JDK")
+        classes.runCheckstyle = false
         classes.run("""
 public class A implements Comparable<A> {
   public int compareTo(A other) {
@@ -438,6 +440,7 @@ public class Question {
     @Test
     fun testExternalLibrary() {
         val classes = SimpleCompiler("JDK")
+        classes.runCheckstyle = false
         classes.run("""
 import org.testng.Assert;
 public class Question {
@@ -483,6 +486,25 @@ public class Question {
     public static void main(String[] unused) {
         System.out.println("OK");
     }
+}
+""")
+        Assert.assertTrue(classes.compiled)
+        Assert.assertTrue(classes.executed)
+        Assert.assertTrue(classes.checkstyleSucceeded)
+    }
+
+    /**
+     * Test that a stylistically correct file indented with 2 spaces passes Checkstyle when appropriate.
+     */
+    @Test
+    fun testCheckstyleLowIndentation() {
+        val classes = SimpleCompiler("Janino")
+        classes.indentLevel = 2
+        classes.run("""
+public class Question {
+  public static void main(String[] unused) {
+    System.out.println("OK");
+  }
 }
 """)
         Assert.assertTrue(classes.compiled)

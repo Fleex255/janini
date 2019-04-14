@@ -21,16 +21,6 @@ public class Snippet extends Source {
     public String source;
 
     /**
-     * Default indentation level.
-     */
-    public static final transient int DEFAULT_INDENTATION_LEVEL = 4;
-
-    /**
-     * Amount to indent when templating code.
-     */
-    public int indentLevel = DEFAULT_INDENTATION_LEVEL;
-
-    /**
      * Janino script evaluator.
      */
     private transient org.codehaus.janino.ScriptEvaluator janinoScriptEvaluator;

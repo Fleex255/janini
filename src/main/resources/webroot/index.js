@@ -23,12 +23,12 @@ $(function () {
     source = source.getValue() + "\n"
     if (id === "runClass") {
       run = {
-        as: "SimpleCompiler", className: "Example",
+        as: "SimpleCompiler", className: "Example", indentLevel: 2,
         sources: [ source ]
       }
     } else {
       run = {
-        as: "Snippet", source
+        as: "Snippet", indentLevel: 2, source
       }
     }
     console.log(run)
