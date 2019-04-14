@@ -490,6 +490,9 @@ public class Question {
         Assert.assertTrue(classes.checkstyleSucceeded)
     }
 
+    /**
+     * Test that a file with bad whitespace fails Checkstyle.
+     */
     @Test
     fun testCheckstyleBadWhitespace() {
         val classes = SimpleCompiler("Janino")

@@ -53,12 +53,22 @@ public class SimpleCompiler extends Source {
     }
 
     /**
-     * Get a map of sources for this snippet. FIXME.
+     * Get a map of sources.
      *
-     * @return a map of sources for this snippet.
+     * @return a map of file names to source code contents.
      */
     protected Map<String, String> sources() {
-        return new HashMap<>();
+        HashMap<String, String> sourceFiles = new HashMap<>();
+        if (sources.length > 0) {
+            // Name the first source file after the entry point class
+            sourceFiles.put(className + ".java", sources[0]);
+            // Then name the others sequentially
+            for (int i = 1; i < sources.length; i++) {
+                sourceFiles.put(className + "Helper" + i, sources[i]);
+            }
+            // TODO: Make sure that naming scheme won't break things
+        }
+        return sourceFiles;
     }
 
     /**
@@ -109,7 +119,7 @@ public class SimpleCompiler extends Source {
     }
 
     /**
-     * Compile Java classes using Janino.
+     * Compile Java classes using the specified compiler.
      * <p>
      * Throws an exception if compilation fails.
      *
