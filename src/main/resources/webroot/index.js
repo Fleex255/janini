@@ -23,7 +23,7 @@ $(function () {
     source = source.getValue() + "\n"
     if (id === "runClass") {
       run = {
-        as: "SimpleCompiler", class: "Example",
+        as: "SimpleCompiler", className: "Example",
         sources: [ source ]
       }
     } else {
