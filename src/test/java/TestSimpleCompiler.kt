@@ -4,7 +4,7 @@ import org.testng.annotations.BeforeClass
 import org.testng.annotations.Test
 
 /**
- * Test the WebServer class.
+ * Test the SimpleCompiler class.
  */
 class TestSimpleCompiler {
     @BeforeClass
@@ -284,7 +284,7 @@ public class Other {
         return "Working";
     }
 }
-""","""
+""", """
 public class Question {
     public static void main(final String[] unused) {
         Other other = new Other();
@@ -311,7 +311,7 @@ public class Other {
         return "Working";
     }
 }
-""","""
+""", """
 import java.util.ArrayList;
 public class Question {
     public static void main(final String[] unused) {
@@ -342,7 +342,7 @@ public class Question {
         System.out.print(other.toString());
     }
 }
-""","""
+""", """
     public class Other {
     public String toString() {
         return "Working";
@@ -369,7 +369,7 @@ public class Question {
         System.out.print(other.toString());
     }
 }
-""","""
+""", """
     public class Other {
     public String toString() {
         return "Working";
@@ -451,15 +451,14 @@ public class Question {
         Assert.assertTrue(classes.executed)
         Assert.assertFalse(classes.timedOut)
     }
-}
 
-/**
- * Test missing external library class loading.
- */
-@Test
-fun testMissingExternalLibrary() {
-    val classes = SimpleCompiler("JDK")
-    classes.run("""
+    /**
+     * Test missing external library class loading.
+     */
+    @Test
+    fun testMissingExternalLibrary() {
+        val classes = SimpleCompiler("JDK")
+        classes.run("""
 import org.lwjgl.*;
 
 public class Question {
@@ -468,7 +467,40 @@ public class Question {
   }
 }
 """)
-    Assert.assertFalse(classes.compiled)
-    Assert.assertFalse(classes.executed)
-    Assert.assertFalse(classes.timedOut)
+        Assert.assertFalse(classes.compiled)
+        Assert.assertFalse(classes.executed)
+        Assert.assertFalse(classes.timedOut)
+    }
+
+    /**
+     * Test that a stylistically correct file passes Checkstyle.
+     */
+    @Test
+    fun testCheckstyleValid() {
+        val classes = SimpleCompiler("Janino")
+        classes.run("""
+public class Question {
+    public static void main(String[] unused) {
+        System.out.println("OK");
+    }
+}
+""")
+        Assert.assertTrue(classes.compiled)
+        Assert.assertTrue(classes.executed)
+        Assert.assertTrue(classes.checkstyleSucceeded)
+    }
+
+    @Test
+    fun testCheckstyleBadWhitespace() {
+        val classes = SimpleCompiler("Janino")
+        classes.run("""
+public class Question {
+    public static void main(String[] unused) {
+        int a=5;
+        System.out.println(a);
+    }
+}
+""")
+        Assert.assertFalse(classes.checkstyleSucceeded)
+    }
 }
