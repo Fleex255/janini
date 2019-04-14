@@ -333,8 +333,35 @@ public class Question {
      * Currently we expect this to fail.
      */
     @Test
-    fun testMultipleClassesInMultipleSourcesInWrongOrder() {
+    fun testMultipleClassesInMultipleSourcesInWrongOrderJanino() {
         val classes = SimpleCompiler("Janino")
+        classes.run("""
+public class Question {
+    public static void main(final String[] unused) {
+        Other other = new Other();
+        System.out.print(other.toString());
+    }
+}
+""","""
+    public class Other {
+    public String toString() {
+        return "Working";
+    }
+}
+""")
+        Assert.assertFalse(classes.compiled)
+        Assert.assertFalse(classes.executed)
+        Assert.assertFalse(classes.timedOut)
+    }
+
+    /**
+     * Test multiple classes in multiple sources in the wrong order.
+     *
+     * Currently we expect this to fail.
+     */
+    @Test
+    fun testMultipleClassesInMultipleSourcesInWrongOrderJDK() {
+        val classes = SimpleCompiler("JDK")
         classes.run("""
 public class Question {
     public static void main(final String[] unused) {
@@ -404,4 +431,44 @@ public class Question {
         Assert.assertTrue(classes.executed)
         Assert.assertFalse(classes.timedOut)
     }
+
+    /**
+     * Test external library class loading.
+     */
+    @Test
+    fun testExternalLibrary() {
+        val classes = SimpleCompiler("JDK")
+        classes.run("""
+import org.testng.Assert;
+public class Question {
+  public static void main(String[] unused) {
+    Assert.assertTrue(true);
+    System.out.print("Done");
+  }
+}
+""")
+        Assert.assertEquals(classes.output, "Done")
+        Assert.assertTrue(classes.executed)
+        Assert.assertFalse(classes.timedOut)
+    }
+}
+
+/**
+ * Test missing external library class loading.
+ */
+@Test
+fun testMissingExternalLibrary() {
+    val classes = SimpleCompiler("JDK")
+    classes.run("""
+import org.lwjgl.*;
+
+public class Question {
+  public static void main(String[] unused) {
+    System.out.print("Worked");
+  }
+}
+""")
+    Assert.assertFalse(classes.compiled)
+    Assert.assertFalse(classes.executed)
+    Assert.assertFalse(classes.timedOut)
 }

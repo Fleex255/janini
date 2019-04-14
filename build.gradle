@@ -1,6 +1,7 @@
 apply plugin: 'java'
 apply plugin: 'checkstyle'
 apply plugin: 'kotlin'
+apply plugin: "com.github.ben-manes.versions"
 
 repositories {
     jcenter()
@@ -9,7 +10,7 @@ configurations {
     shadow
 }
 buildscript {
-    ext.kotlin_version = '1.3.0'
+    ext.kotlin_version = '1.3.30'
     repositories {
         jcenter()
         maven {
@@ -18,27 +19,29 @@ buildscript {
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "com.github.ben-manes:gradle-versions-plugin:0.21.0"
     }
 }
 dependencies {
-    compile 'com.sparkjava:spark-core:2.8.0'
-    compile 'org.codehaus.janino:janino:3.0.11'
-    compile 'org.codehaus.janino:commons-compiler-jdk:3.0.11'
+    compile 'com.sparkjava:spark-core:2.9.0'
+    compile 'org.codehaus.janino:janino:3.0.12'
+    compile 'org.codehaus.janino:commons-compiler-jdk:3.0.12'
     compile 'com.eclipsesource.minimal-json:minimal-json:0.9.5'
     compile 'org.slf4j:slf4j-simple:1.7.25'
     compile 'commons-cli:commons-cli:20040117.000000'
     compile 'com.google.code.gson:gson:2.8.5'
     compile 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
-    compile 'com.puppycrawl.tools:checkstyle:8.16'
-    shadow 'com.sparkjava:spark-core:2.8.0'
-    shadow 'org.codehaus.janino:janino:3.0.11'
-    shadow 'org.codehaus.janino:commons-compiler-jdk:3.0.11'
+    compile 'com.puppycrawl.tools:checkstyle:8.19'
+    compile 'org.testng:testng:6.9.6'
+    shadow 'com.sparkjava:spark-core:2.9.0'
+    shadow 'org.codehaus.janino:janino:3.0.12'
+    shadow 'org.codehaus.janino:commons-compiler-jdk:3.0.12'
     shadow 'com.eclipsesource.minimal-json:minimal-json:0.9.5'
     shadow 'org.slf4j:slf4j-simple:1.7.25'
     shadow 'commons-cli:commons-cli:20040117.000000'
     shadow 'com.google.code.gson:gson:2.8.5'
-    shadow 'com.puppycrawl.tools:checkstyle:8.16'
-    testCompile 'org.testng:testng:6.9.6'
+    shadow 'com.puppycrawl.tools:checkstyle:8.19'
+    shadow 'org.testng:testng:6.9.6'
 }
 checkstyle {
     toolVersion "8.12"
